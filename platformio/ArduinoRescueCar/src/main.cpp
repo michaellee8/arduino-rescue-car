@@ -217,7 +217,6 @@ void UART_Control()
   if (SERIAL.available())
   {
     char inputChar = SERIAL.read();
-    Serial.println("s0:" + inputChar);
     if (inputChar == '(') { // Start loop when left bracket detected
       myString = "";
       inputChar = SERIAL.read();
@@ -225,7 +224,6 @@ void UART_Control()
       {
         myString = myString + inputChar;
         inputChar = SERIAL.read();
-        Serial.println("s0:" + inputChar);
         if (!SERIAL.available()) {
           break;
         }// Break when bracket closed
@@ -249,8 +247,8 @@ void UART_Control()
     if (myString != "") {
       display.clearDisplay();
       display.setCursor(0, 0);     // Start at top-left corner
-      display.println("Serial_Data = ");
-      display.println(myString);
+      // display.println("Serial_Data = ");
+      display.println("Serial: (" + myString + ")");
       display.display();
     }
   }
@@ -270,12 +268,13 @@ void UART_Control()
   {
     BT_Data = Serial3.read();
     SERIAL.print(BT_Data);
+    SERIAL.print((int) BT_Data);
     Serial3.flush();
     BT_alive_cnt = 100;
     display.clearDisplay();
     display.setCursor(0, 0);     // Start at top-left corner
-    display.println("BT_Data = ");
-    display.println(BT_Data);
+    String s(BT_Data);
+    display.println("BT_Data = (" + s + ")");
     display.display();
   }
 
@@ -329,7 +328,7 @@ void setup()
   SERIAL.begin(115200); // USB serial setup
   SERIAL.println("Start");
   STOP(); // Stop the robot
-  Serial3.begin(9600); // BT serial setup
+  Serial3.begin(38400); // BT serial setup
   //Pan=PL4=>48, Tilt=PL5=>47
    servo_pan.attach(48);
    servo_tilt.attach(47);

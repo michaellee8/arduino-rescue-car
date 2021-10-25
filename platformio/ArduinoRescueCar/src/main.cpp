@@ -217,6 +217,7 @@ void UART_Control()
   if (SERIAL.available())
   {
     char inputChar = SERIAL.read();
+    Serial.println("s0:" + inputChar);
     if (inputChar == '(') { // Start loop when left bracket detected
       myString = "";
       inputChar = SERIAL.read();
@@ -224,6 +225,7 @@ void UART_Control()
       {
         myString = myString + inputChar;
         inputChar = SERIAL.read();
+        Serial.println("s0:" + inputChar);
         if (!SERIAL.available()) {
           break;
         }// Break when bracket closed
@@ -309,7 +311,7 @@ void sendVolt(){
     if(newV!=oldV) {
       if (!Serial3.available()) {
         Serial3.println(newV);
-//        Serial.println(newV);
+        // Serial.println(newV);
       }
     }
     oldV=newV;
@@ -341,6 +343,7 @@ void setup()
   display.setTextColor(SSD1306_WHITE); // Draw white text
   display.cp437(true);         // Use full 256 char 'Code Page 437' font
   display.setCursor(0, 0);     // Start at top-left corner
+  display.setRotation(2);
   display.println("AI Robot");
   display.display();
 

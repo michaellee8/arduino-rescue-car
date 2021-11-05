@@ -298,6 +298,16 @@ void UART_Control()
     case 'b':  RIGHT_2();  M_LOG("Right!\r\n");        break;
     case 'L':  Motor_PWM = 1500;                      break;
     case 'M':  Motor_PWM = 500;                       break;
+    case '0':  tilt = 45 + 10 * 0; break;
+    case '1':  tilt = 45 + 10 * 1; break;
+    case '2':  tilt = 45 + 10 * 2; break;
+    case '3':  tilt = 45 + 10 * 3; break;
+    case '4':  tilt = 45 + 10 * 4; break;
+    case '5':  tilt = 45 + 10 * 5; break;
+    case '6':  tilt = 45 + 10 * 6; break;
+    case '7':  tilt = 45 + 10 * 7; break;
+    case '8':  tilt = 45 + 10 * 8; break;
+    case '9':  tilt = 45 + 10 * 9; break;
   }
 }
 

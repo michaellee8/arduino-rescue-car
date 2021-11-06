@@ -247,8 +247,8 @@ void UART_Control()
     if (myString != "") {
       display.clearDisplay();
       display.setCursor(0, 0);     // Start at top-left corner
-      display.println("Serial_Data = ");
-      display.println(myString);
+      // display.println("Serial_Data = ");
+      display.println("Serial: (" + myString + ")");
       display.display();
     }
   }
@@ -268,12 +268,13 @@ void UART_Control()
   {
     BT_Data = Serial3.read();
     SERIAL.print(BT_Data);
+    SERIAL.print((int) BT_Data);
     Serial3.flush();
     BT_alive_cnt = 100;
     display.clearDisplay();
     display.setCursor(0, 0);     // Start at top-left corner
-    display.println("BT_Data = ");
-    display.println(BT_Data);
+    String s(BT_Data);
+    display.println("BT_Data = (" + s + ")");
     display.display();
   }
 
@@ -297,6 +298,16 @@ void UART_Control()
     case 'b':  RIGHT_2();  M_LOG("Right!\r\n");        break;
     case 'L':  Motor_PWM = 1500;                      break;
     case 'M':  Motor_PWM = 500;                       break;
+    case '0':  tilt = 45 + 10 * 0; break;
+    case '1':  tilt = 45 + 10 * 1; break;
+    case '2':  tilt = 45 + 10 * 2; break;
+    case '3':  tilt = 45 + 10 * 3; break;
+    case '4':  tilt = 45 + 10 * 4; break;
+    case '5':  tilt = 45 + 10 * 5; break;
+    case '6':  tilt = 45 + 10 * 6; break;
+    case '7':  tilt = 45 + 10 * 7; break;
+    case '8':  tilt = 45 + 10 * 8; break;
+    case '9':  tilt = 45 + 10 * 9; break;
   }
 }
 
@@ -309,7 +320,7 @@ void sendVolt(){
     if(newV!=oldV) {
       if (!Serial3.available()) {
         Serial3.println(newV);
-//        Serial.println(newV);
+        // Serial.println(newV);
       }
     }
     oldV=newV;
@@ -327,7 +338,7 @@ void setup()
   SERIAL.begin(115200); // USB serial setup
   SERIAL.println("Start");
   STOP(); // Stop the robot
-  Serial3.begin(9600); // BT serial setup
+  Serial3.begin(38400); // BT serial setup
   //Pan=PL4=>48, Tilt=PL5=>47
    servo_pan.attach(48);
    servo_tilt.attach(47);
@@ -341,6 +352,7 @@ void setup()
   display.setTextColor(SSD1306_WHITE); // Draw white text
   display.cp437(true);         // Use full 256 char 'Code Page 437' font
   display.setCursor(0, 0);     // Start at top-left corner
+  display.setRotation(2);
   display.println("AI Robot");
   display.display();
 

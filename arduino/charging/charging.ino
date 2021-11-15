@@ -557,14 +557,6 @@ void loop() {
     if (newV > 10) {STOP();} 
   } 
 
-  // Find charger
-  /*if (prev_volt == 1) {
-    ADVANCE();
-    delay(150);
-    STOP();
-    delay(50);
-    prev_volt == 2;
-  }*/
 
 
     if (distance_in_cmL > 15.0 && distance_in_cmR > 15.0){

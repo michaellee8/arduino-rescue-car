@@ -22,11 +22,11 @@
 
 #define SERIAL_BAUD_RATE 115200
 
-#define PHARSE0_DISTANCE 115.0
-#define PHARSE1_DISTANCE 50.0
-#define PHARSE2_DISTANCE 15.0
-#define PHARSE3_DISTANCE 5.0
-#define PHARSE4_DISTANCE 3.5
+#define PHASES 5
+
+// We define 5 phases during our approach to the target charger.
+
+const float PHASES_DISTANCE[PHASES] = {115.0, 50.0, 15.0, 5.0, 3.5};
 
 // ArduinoSort
 // Simple Insertion sort suitable for running in low memory environment like
@@ -124,6 +124,9 @@ float distance_in_cm_L;
 float distance_in_cm_R;
 
 float current_voltage;
+
+bool is_tilt_for_charger_to_left = true;
+unsigned long tilt_for_charger_prev_alt_time = 0;
 
 // A number variable used for debugging that will be printed on log.
 // Here we use it to log application state;
@@ -345,7 +348,7 @@ void log_to_display() {
 }
 
 // Helper functions for tilting since the pattern is hard to remember.
-void tilt_right(int speed){
+void tilt_right(int speed) {
   setRF(-speed);
   setRB(speed);
   setLF(speed);
@@ -354,32 +357,213 @@ void tilt_right(int speed){
 
 // tilt_left is just reverse of tilt_right. Make use of negative speed
 // here for cleaner code.
-void tilt_left(int speed){
-  tilt_right(-speed);
-}
+void tilt_left(int speed) { tilt_right(-speed); }
 
 void run_motor_logic() {
-  if (distance_in_cm_L > PHARSE0_DISTANCE &&
-      distance_in_cm_R > PHARSE0_DISTANCE) {
-    // Impossible case, probably sensor too close or misplaced.
+  if (distance_in_cm_L > PHASES_DISTANCE[0] &&
+      distance_in_cm_R > PHASES_DISTANCE[0]) {
+    // Impossible case, probably sensor too close or car misplaced.
     // We will do nothing.
     debug_number = -1;
     return;
   }
-  if (distance_in_cm_R <= PHARSE0_DISTANCE &&
-      distance_in_cm_L > PHARSE0_DISTANCE) {
+  if (distance_in_cm_R <= PHASES_DISTANCE[0] &&
+      distance_in_cm_L > PHASES_DISTANCE[0]) {
     // Right sensor is aligned but left sensor if not aligned.
     // Tilt right slowly to get both aligned.
     debug_number = 1;
     tilt_right(40);
+    return;
+  }
+  if (distance_in_cm_L <= PHASES_DISTANCE[0] &&
+      distance_in_cm_R > PHASES_DISTANCE[0]) {
+    // Left sensor is aligned but right sensor is not aligned.
+    // Tilt left slowly to get both aligned.
+    debug_number = 2;
+    tilt_left(40);
+    return;
+  }
 
+  // Determine current phase
+  int phase = -1;
+
+  for (int i = 0; i < PHASES; i++) {
+    if (distance_in_cm_L <= PHASES_DISTANCE[i] &&
+        distance_in_cm_R <= PHASES_DISTANCE[i]) {
+      phase = i;
+    }
+  }
+  if (phase == -1) {
+    // Impossible!
+    debug_number = -2;
+    return;
+  }
+
+  // In each phases except the final phase we have 3 possible actions.
+  // - Bring Left wheels forward because left sensor is too far.
+  // - Bring Right wheels forward because right sensor is too far.
+  // - Bring the whole car forward when there are no problems.
+
+  if (phase < PHASES - 1) {
+    // We are not in final Phase
+    // In different phase we have different tolarence for left/right sensor
+    // inbalance, since farer the sensor larger the error.
+    float tolarence = 10.0;
+    if (phase >= 0 && phase <= 1) {
+      // For the first two phases we give it a larger tolarence of 5 cm.
+      tolarence = 5.0;
+    } else if (phase >= 2 && phase < PHASES - 1) {
+      // For the later phases we only allow 2 cm.
+      tolarence = 2.0;
+    } else {
+      // Impossible case here.
+      debug_number = -3;
+      return;
+    }
+
+    // Now check for inbalance.
+    // In first two phases we can afford rotating with translation.
+    // In later phases we cannot afford it since it is too close.
+    if (distance_in_cm_L - distance_in_cm_R >= tolarence) {
+      if (phase >= 2) {
+        // Later phases.
+        setLF(30);
+        setLB(30);
+        setRF(-30);
+        setRB(-30);
+        debug_number = 3;
+        return;
+      } else {
+        // Earlier phases.
+        setLF(40);
+        setLB(40);
+        setRF(0);
+        setRB(0);
+        debug_number = 4;
+        return;
+      }
+    } else if (distance_in_cm_R - distance_in_cm_L >= tolarence) {
+      if (phase >= 2) {
+        // Later phases.
+        setRF(30);
+        setRB(30);
+        setLF(-30);
+        setLB(-30);
+        debug_number = 5;
+        return;
+      } else {
+        // Earlier phases.
+        setRF(40);
+        setRB(40);
+        setLF(0);
+        setLB(0);
+        debug_number = 6;
+        return;
+      }
+    } else {
+      // Move slower for later phases.
+      if (phase >= 2) {
+        // Later phases.
+        setRF(30);
+        setRB(30);
+        setLF(30);
+        setLB(30);
+        debug_number = 7;
+        return;
+      } else {
+        // Earlier phases.
+        setRF(60);
+        setRB(60);
+        setLF(60);
+        setLB(60);
+        debug_number = 8;
+        return;
+      }
+    }
+  } else {
+    // We are in final Phase
+
+    // First make sure left/right sensors are balanced.
+    // tolarence is very low here.
+    float tolarence = 1.5;
+    if (distance_in_cm_L - distance_in_cm_R >= tolarence) {
+      setLF(15);
+      setLB(15);
+      setRF(-15);
+      setRB(-15);
+      debug_number = 9;
+      return;
+    } else if (distance_in_cm_R - distance_in_cm_L >= tolarence) {
+      setLF(-15);
+      setLB(-15);
+      setRF(15);
+      setRB(15);
+      debug_number = 10;
+      return;
+    }
+
+    // If tilt for charger is disabled, then we are done.
+    if (!TILT_FOR_CHARGER) {
+      setRF(0);
+      setRB(0);
+      setLB(0);
+      setLF(0);
+      debug_number = 11;
+      return;
+    }
+
+    // Let's tilt for charger.
+    // We will need to revert the direction if we already tilted for current
+    // direction for 1000 ms (1 second).
+    unsigned long current_time = millis();
+    if (current_time - tilt_for_charger_prev_alt_time > 1000) {
+      is_tilt_for_charger_to_left = !is_tilt_for_charger_to_left;
+      tilt_for_charger_prev_alt_time = current_time;
+    }
+    if (is_tilt_for_charger_to_left) {
+      tilt_left(20);
+      debug_number = 12;
+      return;
+    } else {
+      tilt_right(20);
+      debug_number = 13;
+      return;
+    }
   }
 }
 
 void setup() {
-  // put your setup code here, to run once:
+  Serial.begin(115200);
+
+  // OLED Setup//////////////////////////////////
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {  // Address 0x3C for 128x32
+    Serial.println(F("SSD1306 allocation failed"));
+  }
+
+  display.setRotation(2);
+
+  pinMode(A0, INPUT);
+
+  // Setup Voltage detector
+  pinMode(A0, INPUT);
+
+  // Setup ultrasonic sensor
+  pinMode(LEFT_SONIC_ECHO_PIN, INPUT);
+  pinMode(LEFT_SONIC_TRIG_PIN, OUTPUT);
+  pinMode(RIGHT_SONIC_ECHO_PIN, INPUT);
+  pinMode(RIGHT_SONIC_TRIG_PIN, OUTPUT);
+
+  // Wait for 5 seconds before starting
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.print("Init... 5 secs");
+  display.display();
+  delay(5000);
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
+  check_voltage();
+  measure_distance();
+  run_motor_logic();
+  log_to_display();
 }

@@ -542,8 +542,6 @@ void setup() {
 
   display.setRotation(2);
 
-  pinMode(A0, INPUT);
-
   // Setup Voltage detector
   pinMode(A0, INPUT);
 

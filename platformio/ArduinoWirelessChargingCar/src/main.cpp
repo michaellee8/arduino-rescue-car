@@ -22,6 +22,12 @@
 
 #define SERIAL_BAUD_RATE 115200
 
+#define PHARSE0_DISTANCE 115.0
+#define PHARSE1_DISTANCE 50.0
+#define PHARSE2_DISTANCE 15.0
+#define PHARSE3_DISTANCE 5.0
+#define PHARSE4_DISTANCE 3.5
+
 // ArduinoSort
 // Simple Insertion sort suitable for running in low memory environment like
 // Arduino grabbed from GitHub.
@@ -118,6 +124,13 @@ float distance_in_cm_L;
 float distance_in_cm_R;
 
 float current_voltage;
+
+// A number variable used for debugging that will be printed on log.
+// Here we use it to log application state;
+// If it is negative number that means something that does not make
+// sense is happening. Positive number means currently which if branch
+// are we running.
+int debug_number = 0;
 
 #define PWMA 12  // Motor A PWM
 #define DIRA1 34
@@ -303,6 +316,64 @@ void measure_distance() {
 
   distance_in_cm_L = durationL / 2.0 / 29.1;
   distance_in_cm_R = durationR / 2.0 / 29.1;
+}
+
+// Log all variables to display since we don't have serial port.
+void log_to_display() {
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.cp437(true);
+  display.setCursor(0, 0);
+  display.print("L");
+  display.print(distance_in_cm_L, 1);
+  display.print(",R");
+  display.print(distance_in_cm_R, 1);
+  display.print(",V");
+  display.print(current_voltage, 1);
+  display.print(",rb");
+  display.print(motorA_current_speed);
+  display.print(",lb");
+  display.print(motorB_current_speed);
+  display.print(",rf");
+  display.print(motorC_current_speed);
+  display.print(",lf");
+  display.print(motorD_current_speed);
+  display.print(",C");
+  display.print(debug_number);
+  display.display();
+}
+
+// Helper functions for tilting since the pattern is hard to remember.
+void tilt_right(int speed){
+  setRF(-speed);
+  setRB(speed);
+  setLF(speed);
+  setLB(-speed);
+}
+
+// tilt_left is just reverse of tilt_right. Make use of negative speed
+// here for cleaner code.
+void tilt_left(int speed){
+  tilt_right(-speed);
+}
+
+void run_motor_logic() {
+  if (distance_in_cm_L > PHARSE0_DISTANCE &&
+      distance_in_cm_R > PHARSE0_DISTANCE) {
+    // Impossible case, probably sensor too close or misplaced.
+    // We will do nothing.
+    debug_number = -1;
+    return;
+  }
+  if (distance_in_cm_R <= PHARSE0_DISTANCE &&
+      distance_in_cm_L > PHARSE0_DISTANCE) {
+    // Right sensor is aligned but left sensor if not aligned.
+    // Tilt right slowly to get both aligned.
+    debug_number = 1;
+    tilt_right(40);
+
+  }
 }
 
 void setup() {

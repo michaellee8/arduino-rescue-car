@@ -109,6 +109,12 @@ int voltCount = 0;
 int prev_volt = 0;
 String if_sta = "";
 
+int motor_state = 0;
+int prev_motor_state = 0;
+long prev_motor_command_time = 0;
+long motor_state_changes = 0;
+
+
 #include <Servo.h>
 Servo servo_pan;
 Servo servo_tilt;
@@ -396,28 +402,28 @@ void UART_Control()
 /*Voltage Readings transmitter
   Sends them via Serial3*/
  void sendVolt() {
-  newV = analogRead(A0);
-  newV = newV * 25 / 1023;
-  if (newV != oldV & newV != 0) {
-    /*if (!Serial3.available()) {
-      Serial3.println(newV);
-      Serial.println(newV);
-    }*/
-    display.clearDisplay();
-    display.setTextSize(2);      // Normal 1:1 pixel scale
-    display.setTextColor(SSD1306_WHITE); // Draw white text
-    display.cp437(true);         // Use full 256 char 'Code Page 437' font
-    display.setCursor(0, 0);     // Start at top-left corner
-    display.println("AI Robot");
-    display.setCursor(0, 16);     // Start at top-left corner
-    display.println("V:");
-    display.setCursor(96, 16);     // Start at top-left corner
-    display.println("V");
-    display.setCursor(36, 16);     // Start at top-left corner
-    display.println(newV);
-    display.display();
-  }
-  oldV = newV;
+//  newV = analogRead(A0);
+//  newV = newV * 25 / 1023;
+//  if (newV != oldV & newV != 0) {
+//    /*if (!Serial3.available()) {
+//      Serial3.println(newV);
+//      Serial.println(newV);
+//    }*/
+//    display.clearDisplay();
+//    display.setTextSize(2);      // Normal 1:1 pixel scale
+//    display.setTextColor(SSD1306_WHITE); // Draw white text
+//    display.cp437(true);         // Use full 256 char 'Code Page 437' font
+//    display.setCursor(0, 0);     // Start at top-left corner
+//    display.println("AI Robot");
+//    display.setCursor(0, 16);     // Start at top-left corner
+//    display.println("V:");
+//    display.setCursor(96, 16);     // Start at top-left corner
+//    display.println("V");
+//    display.setCursor(36, 16);     // Start at top-left corner
+//    display.println(newV);
+//    display.display();
+//  }
+//  oldV = newV;
 }
 
 
@@ -506,13 +512,20 @@ void measure_distance() {
     display.setCursor(0, 0);     // Start at top-left corner
     display.print("L");
     display.print(distance_in_cmL, 1);
-    display.print(", ");
+    display.print(",");
     display.print("R");
-    display.println(distance_in_cmR, 1);
-    display.println(if_sta);
+    display.print(distance_in_cmR, 1);
+    display.print(",");
+    display.print("S");
+    display.print(motor_state);
+    display.print(",");
+    display.print("C");
+    display.print(motor_state_changes);
     display.display();
 
 }
+
+
 
 void loop() {
   // run the code in every 20ms
@@ -532,10 +545,10 @@ void loop() {
 
     //movement 001
     measure_distance();
-    Serial.print(distance_in_cmL);
-    Serial.print("    ");
-    Serial.print(distance_in_cmR);
-    Serial.println("");
+//    Serial.print(distance_in_cmL);
+//    Serial.print("    ");
+//    Serial.print(distance_in_cmR);
+//    Serial.println("");
          
   } if (voltCount >= 5) {
     // Next Task: Wireless Charging
@@ -556,22 +569,13 @@ void loop() {
 
     if (distance_in_cmL > 15.0 && distance_in_cmR > 15.0){
       // charger station is not found yet, move forward
-      MOTORA_FORWARD(150 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-      MOTORB_BACKOFF(150 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-      MOTORC_FORWARD(150 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-      MOTORD_BACKOFF(150 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+      motor_state = 1;
     } else if (distance_in_cmL <= 15.0 && distance_in_cmR > 15.0){
       // Only Left sensor saw something, tilt left slowly
-      MOTORA_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-      MOTORB_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-      MOTORC_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-      MOTORD_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+      motor_state = 2;
     } else if (distance_in_cmL > 15.0 && distance_in_cmR <= 15.0){
       // Only right sensor saw something, tilt right slowly
-      MOTORA_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-      MOTORB_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-      MOTORC_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-      MOTORD_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+      motor_state = 3;
     } else if (distance_in_cmL <= 15.0 && distance_in_cmR <= 15.0){
       // both sensors saw the target, perform corrections.
       if (distance_in_cmL > 5.0 && distance_in_cmR > 5.0){
@@ -579,53 +583,118 @@ void loop() {
         // forward in each step.
         if (distance_in_cmL - distance_in_cmR > 2.0){
           // Right sensor is closer, move the left wheels.
-          MOTORA_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORB_BACKOFF(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORC_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORD_BACKOFF(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          motor_state = 4;
         } else if (distance_in_cmR - distance_in_cmL > 2.0){
           // Left sensor is closer, move the right wheels.
-          MOTORA_FORWARD(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORB_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORC_FORWARD(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORD_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          motor_state = 5;
         } else {
           // Let's keep moving forward
-          MOTORA_FORWARD(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORB_BACKOFF(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORC_FORWARD(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORD_BACKOFF(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          motor_state = 6;
         }
       } else {
         if (distance_in_cmL < 3.5 && distance_in_cmR < 3.5){
           // We got the required target, stop if charging is not required or tilt for correct voltage
           // TODO(michaellee8): implement tilt for voltage
-          MOTORA_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORB_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORC_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORD_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          motor_state = 7;
         } else if (distance_in_cmL - distance_in_cmR > 1.5){
           // Right sensor is closer, move the left wheels.
-          MOTORA_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORB_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORC_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORD_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          motor_state = 8;
         } else if (distance_in_cmR - distance_in_cmL > 1.5){
           // Left sensor is closer, move the right wheels.
-          MOTORA_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORB_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORC_FORWARD(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORD_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          motor_state = 9;
         } else {
           // Let's keep moving forward
-          MOTORA_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORB_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORC_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
-          MOTORD_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          motor_state = 10;
         }
       }
     }
 
-    delay(20);
+    unsigned long current_millis = millis();
+
+    if (motor_state != prev_motor_state || abs(current_millis - prev_motor_command_time) > 2000){
+      motor_state_changes++;
+      prev_motor_command_time = current_millis;
+      switch (motor_state){
+        case 1:
+          // charger station is not found yet, move forward
+          MOTORA_FORWARD(70);
+          MOTORB_BACKOFF(70);
+          MOTORC_FORWARD(70);
+          MOTORD_BACKOFF(70);
+          break;
+        case 2:
+          // Only Left sensor saw something, tilt left slowly
+          MOTORA_BACKOFF(30);
+          MOTORB_BACKOFF(30);
+          MOTORC_FORWARD(30);
+          MOTORD_FORWARD(30);
+          break;
+        case 3:
+          // Only right sensor saw something, tilt right slowly
+          MOTORA_FORWARD(30);
+          MOTORB_FORWARD(30);
+          MOTORC_BACKOFF(30);
+          MOTORD_BACKOFF(30);
+          break;
+        case 4:
+          // Right sensor is closer, move the left wheels.
+          MOTORA_STOP(0);
+          MOTORB_BACKOFF(50);
+          MOTORC_STOP(0);
+          MOTORD_BACKOFF(50);
+          break;
+        case 5:
+          // Left sensor is closer, move the right wheels.
+          MOTORA_FORWARD(50);
+          MOTORB_STOP(0);
+          MOTORC_FORWARD(50);
+          MOTORD_STOP(0);
+          break;
+        case 6:
+          // Let's keep moving forward
+          MOTORA_FORWARD(50);
+          MOTORB_BACKOFF(50);
+          MOTORC_FORWARD(50);
+          MOTORD_BACKOFF(50);
+          break;
+        case 7:
+          // We got the required target, stop if charging is not required or tilt for correct voltage
+          // TODO(michaellee8): implement tilt for voltage
+          MOTORA_STOP(0);
+          MOTORB_STOP(0);
+          MOTORC_STOP(0);
+          MOTORD_STOP(0);
+          break;
+        case 8:
+          // Right sensor is closer, move the left wheels.
+          MOTORA_BACKOFF(30);
+          MOTORB_BACKOFF(30);
+          MOTORC_BACKOFF(30);
+          MOTORD_BACKOFF(30);
+          break;
+        case 9:
+          // Left sensor is closer, move the right wheels.
+          MOTORA_FORWARD(30);
+          MOTORB_FORWARD(30);
+          MOTORC_FORWARD(50);
+          MOTORD_FORWARD(30);
+          break;
+        case 10:
+          // Let's keep moving forward
+          MOTORA_FORWARD(30);
+          MOTORB_BACKOFF(30);
+          MOTORC_FORWARD(30);
+          MOTORD_BACKOFF(30);
+          break;
+      }
+      
+
+    }
+
+
+
+    prev_motor_state = motor_state;
+
+    delay(1);
   
 }

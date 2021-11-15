@@ -6,6 +6,9 @@
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 32 // OLED display height, in pixels
 
+#define SPEED_FACTOR 1
+#define SPEED_DIV_FACTOR 1
+
 #define TILT_FOR_CHARGER false
 
 #define SAMPLE_SIZE 5
@@ -501,14 +504,11 @@ void measure_distance() {
     display.setTextColor(SSD1306_WHITE); // Draw white text
     display.cp437(true);         // Use full 256 char 'Code Page 437' font
     display.setCursor(0, 0);     // Start at top-left corner
-    display.println("L");
-    display.setCursor(72, 0);     // Start at top-left corner
-    display.println("R");
-    display.setCursor(24, 0);     // Start at top-left corner
-    display.println(distance_in_cmL);
-    display.setCursor(96, 0);     // Start at top-left corner
-    display.println(distance_in_cmR);
-    display.setCursor(0, 16);     // Start at top-left corner
+    display.print("L");
+    display.print(distance_in_cmL, 1);
+    display.print(", ");
+    display.print("R");
+    display.println(distance_in_cmR, 1);
     display.println(if_sta);
     display.display();
 
@@ -556,22 +556,22 @@ void loop() {
 
     if (distance_in_cmL > 15.0 && distance_in_cmR > 15.0){
       // charger station is not found yet, move forward
-      MOTORA_FORWARD(70);
-      MOTORB_BACKOFF(70);
-      MOTORC_FORWARD(70);
-      MOTORD_BACKOFF(70);
+      MOTORA_FORWARD(150 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+      MOTORB_BACKOFF(150 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+      MOTORC_FORWARD(150 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+      MOTORD_BACKOFF(150 * SPEED_FACTOR / SPEED_DIV_FACTOR);
     } else if (distance_in_cmL <= 15.0 && distance_in_cmR > 15.0){
       // Only Left sensor saw something, tilt left slowly
-      MOTORA_BACKOFF(30);
-      MOTORB_BACKOFF(30);
-      MOTORC_FORWARD(30);
-      MOTORD_FORWARD(30);
+      MOTORA_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+      MOTORB_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+      MOTORC_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+      MOTORD_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
     } else if (distance_in_cmL > 15.0 && distance_in_cmR <= 15.0){
       // Only right sensor saw something, tilt right slowly
-      MOTORA_FORWARD(30);
-      MOTORB_FORWARD(30);
-      MOTORC_BACKOFF(30);
-      MOTORD_BACKOFF(30);
+      MOTORA_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+      MOTORB_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+      MOTORC_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+      MOTORD_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
     } else if (distance_in_cmL <= 15.0 && distance_in_cmR <= 15.0){
       // both sensors saw the target, perform corrections.
       if (distance_in_cmL > 5.0 && distance_in_cmR > 5.0){
@@ -579,51 +579,53 @@ void loop() {
         // forward in each step.
         if (distance_in_cmL - distance_in_cmR > 2.0){
           // Right sensor is closer, move the left wheels.
-          MOTORA_STOP(0);
-          MOTORB_BACKOFF(50);
-          MOTORC_STOP(0);
-          MOTORD_BACKOFF(50);
+          MOTORA_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORB_BACKOFF(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORC_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORD_BACKOFF(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
         } else if (distance_in_cmR - distance_in_cmL > 2.0){
           // Left sensor is closer, move the right wheels.
-          MOTORA_FORWARD(50);
-          MOTORB_STOP(0);
-          MOTORC_FORWARD(50);
-          MOTORD_STOP(0);
+          MOTORA_FORWARD(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORB_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORC_FORWARD(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORD_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
         } else {
           // Let's keep moving forward
-          MOTORA_FORWARD(50);
-          MOTORB_BACKOFF(50);
-          MOTORC_FORWARD(50);
-          MOTORD_BACKOFF(50);
+          MOTORA_FORWARD(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORB_BACKOFF(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORC_FORWARD(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORD_BACKOFF(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
         }
       } else {
         if (distance_in_cmL < 3.5 && distance_in_cmR < 3.5){
           // We got the required target, stop if charging is not required or tilt for correct voltage
           // TODO(michaellee8): implement tilt for voltage
-          MOTORA_STOP(0);
-          MOTORB_STOP(0);
-          MOTORC_STOP(0);
-          MOTORD_STOP(0);
+          MOTORA_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORB_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORC_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORD_STOP(0 * SPEED_FACTOR / SPEED_DIV_FACTOR);
         } else if (distance_in_cmL - distance_in_cmR > 1.5){
           // Right sensor is closer, move the left wheels.
-          MOTORA_BACKOFF(30);
-          MOTORB_BACKOFF(30);
-          MOTORC_BACKOFF(30);
-          MOTORD_BACKOFF(30);
+          MOTORA_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORB_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORC_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORD_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
         } else if (distance_in_cmR - distance_in_cmL > 1.5){
           // Left sensor is closer, move the right wheels.
-          MOTORA_FORWARD(30);
-          MOTORB_FORWARD(30);
-          MOTORC_FORWARD(50);
-          MOTORD_FORWARD(30);
+          MOTORA_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORB_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORC_FORWARD(50 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORD_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
         } else {
           // Let's keep moving forward
-          MOTORA_FORWARD(30);
-          MOTORB_BACKOFF(30);
-          MOTORC_FORWARD(30);
-          MOTORD_BACKOFF(30);
+          MOTORA_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORB_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORC_FORWARD(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
+          MOTORD_BACKOFF(30 * SPEED_FACTOR / SPEED_DIV_FACTOR);
         }
       }
     }
+
+    delay(20);
   
 }

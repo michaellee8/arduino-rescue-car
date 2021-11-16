@@ -266,13 +266,13 @@ void set_motorD_speed(int speed) {
 // L for left, R for right, F for forward, B for backward.
 // Use inline for one less function call, hence better performance.
 
-inline void setLF(int speed) { set_motorD_speed(speed); }
+inline void setLF(int speed) { set_motorA_speed(speed); }
 
-inline void setRF(int speed) { set_motorC_speed(speed); }
+inline void setRF(int speed) { set_motorB_speed(speed); }
 
-inline void setLB(int speed) { set_motorB_speed(speed); }
+inline void setLB(int speed) { set_motorC_speed(speed); }
 
-inline void setRB(int speed) { set_motorA_speed(speed); }
+inline void setRB(int speed) { set_motorD_speed(speed); }
 
 void check_voltage() {
   // Subroutine for reading voltage

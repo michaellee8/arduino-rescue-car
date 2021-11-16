@@ -393,6 +393,12 @@ void run_motor_logic() {
       distance_in_cm_R > PHASES_DISTANCE[0]) {
     // Impossible case, probably sensor too close or car misplaced.
     // We will do nothing.
+
+
+    setLF(0);
+    setLB(0);
+    setRF(0);
+    setRB(0);
     debug_number = -1;
     return;
   }

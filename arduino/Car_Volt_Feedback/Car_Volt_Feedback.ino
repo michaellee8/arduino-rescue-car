@@ -309,7 +309,7 @@ void sendVolt(){
     if(newV!=oldV) {
       if (!Serial3.available()) {
         Serial3.println(newV);
-        Serial.println(newV);
+//        Serial.println(newV);
       }
     }
     oldV=newV;

@@ -14,11 +14,19 @@
 
 #define SAMPLE_SIZE 5
 
-#define LEFT_SONIC_ECHO_PIN A10
-#define LEFT_SONIC_TRIG_PIN A11
+// #define LEFT_SONIC_ECHO_PIN A10
+// #define LEFT_SONIC_TRIG_PIN A11
 
-#define RIGHT_SONIC_ECHO_PIN A6
-#define RIGHT_SONIC_TRIG_PIN A7
+// #define RIGHT_SONIC_ECHO_PIN A6
+// #define RIGHT_SONIC_TRIG_PIN A7
+
+// Swapped sonar configutation
+
+#define RIGHT_SONIC_ECHO_PIN A10
+#define RIGHT_SONIC_TRIG_PIN A11
+
+#define LEFT_SONIC_ECHO_PIN A6
+#define LEFT_SONIC_TRIG_PIN A7
 
 #define SERIAL_BAUD_RATE 115200
 
@@ -293,12 +301,12 @@ void measure_distance() {
     digitalWrite(LEFT_SONIC_TRIG_PIN, HIGH);
     delayMicroseconds(10);
     digitalWrite(LEFT_SONIC_TRIG_PIN, LOW);
-    durationLs[i] = pulseIn(RIGHT_SONIC_ECHO_PIN, HIGH);
+    durationLs[i] = pulseIn(LEFT_SONIC_ECHO_PIN, HIGH);
 
     // Take some rest before we measure the right sensor.
     delayMicroseconds(20);
 
-    digitalWrite(RIGHT_SONIC_ECHO_PIN, LOW);
+    digitalWrite(RIGHT_SONIC_TRIG_PIN, LOW);
     delayMicroseconds(5);
     digitalWrite(RIGHT_SONIC_TRIG_PIN, HIGH);
     delayMicroseconds(10);
@@ -345,6 +353,27 @@ void log_to_display() {
   display.print(",C");
   display.print(debug_number);
   display.display();
+}
+
+// Log all variables to Serial
+void log_to_serial() {
+  Serial.print("L");
+  Serial.print(distance_in_cm_L, 1);
+  Serial.print(",R");
+  Serial.print(distance_in_cm_R, 1);
+  Serial.print(",V");
+  Serial.print(current_voltage, 1);
+  Serial.print(",rb");
+  Serial.print(motorA_current_speed);
+  Serial.print(",lb");
+  Serial.print(motorB_current_speed);
+  Serial.print(",rf");
+  Serial.print(motorC_current_speed);
+  Serial.print(",lf");
+  Serial.print(motorD_current_speed);
+  Serial.print(",C");
+  Serial.print(debug_number);
+  Serial.println();
 }
 
 // Helper functions for tilting since the pattern is hard to remember.
@@ -564,4 +593,5 @@ void loop() {
   measure_distance();
   run_motor_logic();
   log_to_display();
+  log_to_serial();
 }

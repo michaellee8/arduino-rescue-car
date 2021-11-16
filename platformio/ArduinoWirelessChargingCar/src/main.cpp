@@ -34,7 +34,7 @@
 
 // We define 5 phases during our approach to the target charger.
 
-const float PHASES_DISTANCE[PHASES] = {115.0, 50.0, 15.0, 5.0, 3.5};
+const float PHASES_DISTANCE[PHASES] = {115.0, 50.0, 15.0, 10.0, 5.0};
 
 // ArduinoSort
 // Simple Insertion sort suitable for running in low memory environment like
@@ -258,7 +258,7 @@ void set_motorD_speed(int speed) {
   if (motorD_current_speed == speed) {
     return;
   }
-  _set_normal_motor_speed(DIRD1, DIRD2, PWMD, speed);
+  _set_reverse_motor_speed(DIRD1, DIRD2, PWMD, speed);
   motorD_current_speed = speed;
 }
 

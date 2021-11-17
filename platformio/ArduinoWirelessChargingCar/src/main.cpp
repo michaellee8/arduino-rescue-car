@@ -166,12 +166,12 @@ int debug_number = 0;
 // Let's talk about DC motors confiuration here.
 // The DC motors are not configured in the way explained in the graphs.
 // The actual configuration is like this:
+//        |
+//        |
 // 1  ↓A-----B↓  -1
 //     |  |  |
 //     |  ↓  |
 // 1  ↓C-----D↓  -1
-//        |
-//        V
 // Motor B and D are configured in reverse, so to make them drive forward, you
 // need DIRX1 = HIGH and DIRX2 = LOW, and drive backward you do DIRX1 = LOW and
 // DIRX2 = HIGH. Motor A and C are configured normally, so to make them drive

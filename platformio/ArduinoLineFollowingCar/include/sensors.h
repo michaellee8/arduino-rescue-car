@@ -11,4 +11,12 @@ class LineSensor {
         bool IsOnLine();
 };
 
+class DigitalLineSensor {
+    protected:
+        int digital_pin;
+    public:
+        DigitalLineSensor(int digital_pin);
+        bool IsOnLine();
+};
+
 #endif

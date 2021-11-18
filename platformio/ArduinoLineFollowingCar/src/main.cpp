@@ -45,9 +45,11 @@ auto motorRF = motorB;
 auto motorLB = motorC;
 auto motorRB = motorD;
 
-LineSensor lineSensorLF(LINE_SENSOR_LF_ANALOG_PIN);
-LineSensor lineSensorMF(LINE_SENSOR_MF_ANALOG_PIN);
-LineSensor lineSensorRF(LINE_SENSOR_RF_ANALOG_PIN);
+// Analog seems broken here
+DigitalLineSensor lineSensorLF(LINE_SENSOR_LF_DIGITAL_PIN);
+
+DigitalLineSensor lineSensorMF(LINE_SENSOR_MF_DIGITAL_PIN);
+DigitalLineSensor lineSensorRF(LINE_SENSOR_RF_DIGITAL_PIN);
 
 bool isLBlack;
 bool isMBlack;
@@ -116,9 +118,14 @@ void log_to_display() {
   display.cp437(true);
   display.setCursor(0, 0);
   display.print("L");
-  display.print(distance_in_cm_L, 1);
+  // display.print(isLBlack);
+  display.print(analogRead(LINE_SENSOR_LF_ANALOG_PIN));
+  display.print(",M");
+  // display.print(isMBlack);
+  display.print(analogRead(LINE_SENSOR_MF_ANALOG_PIN));
   display.print(",R");
-  display.print(distance_in_cm_R, 1);
+  // display.print(isRBlack);
+  display.print(analogRead(LINE_SENSOR_RF_ANALOG_PIN));
   display.print(",rb");
   display.print(motorRB.GetCurrentSpeed());
   display.print(",lb");
@@ -135,9 +142,11 @@ void log_to_display() {
 // Log all variables to Serial
 void log_to_serial() {
   Serial.print("L");
-  Serial.print(distance_in_cm_L, 1);
+  Serial.print(isLBlack);
+  display.print(",M");
+  display.print(isMBlack);
   Serial.print(",R");
-  Serial.print(distance_in_cm_R, 1);
+  Serial.print(isRBlack);
   Serial.print(",rb");
   Serial.print(motorRB.GetCurrentSpeed());
   Serial.print(",lb");

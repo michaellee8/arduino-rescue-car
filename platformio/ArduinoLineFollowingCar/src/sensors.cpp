@@ -10,3 +10,11 @@ LineSensor::LineSensor(int analog_pin){
 bool LineSensor::IsOnLine(){
     return analogRead(analog_pin) <= LINE_SENSOR_THRESHOLD;
 }
+
+DigitalLineSensor::DigitalLineSensor(int digital_pin){
+    this->digital_pin = digital_pin;
+}
+
+bool DigitalLineSensor::IsOnLine(){
+    return digitalRead(digital_pin) == LOW;
+}

@@ -4,120 +4,9 @@
 #include <SPI.h>
 #include <Wire.h>
 
-#define SCREEN_WIDTH 128  // OLED display width, in pixels
-#define SCREEN_HEIGHT 32  // OLED display height, in pixels
-
-#define SPEED_FACTOR 1
-#define SPEED_DIV_FACTOR 1
-
-#define TILT_FOR_CHARGER false
-
-#define SAMPLE_SIZE 5
-
-// #define LEFT_SONIC_ECHO_PIN A10
-// #define LEFT_SONIC_TRIG_PIN A11
-
-// #define RIGHT_SONIC_ECHO_PIN A6
-// #define RIGHT_SONIC_TRIG_PIN A7
-
-// Swapped sonar configutation
-
-#define RIGHT_SONIC_ECHO_PIN A10
-#define RIGHT_SONIC_TRIG_PIN A11
-
-#define LEFT_SONIC_ECHO_PIN A6
-#define LEFT_SONIC_TRIG_PIN A7
-
-#define SERIAL_BAUD_RATE 115200
-
-#define PHASES 5
-
-// We define 5 phases during our approach to the target charger.
-
-const float PHASES_DISTANCE[PHASES] = {115.0, 50.0, 15.0, 10.0, 5.0};
-
-// ArduinoSort
-// Simple Insertion sort suitable for running in low memory environment like
-// Arduino grabbed from GitHub.
-// Just ignore it and skip to line 108.
-
-#ifndef ArduinoSort_h
-#define ArduinoSort_h
-
-/**** These are the functions you can use ****/
-
-// Sort an array
-template <typename AnyType>
-void sortArray(AnyType array[], size_t sizeOfArray);
-
-// Sort in reverse
-template <typename AnyType>
-void sortArrayReverse(AnyType array[], size_t sizeOfArray);
-
-// Sort an array with custom comparison function
-template <typename AnyType>
-void sortArray(AnyType array[], size_t sizeOfArray,
-               bool (*largerThan)(AnyType, AnyType));
-
-// Sort in reverse with custom comparison function
-template <typename AnyType>
-void sortArrayReverse(AnyType array[], size_t sizeOfArray,
-                      bool (*largerThan)(AnyType, AnyType));
-
-/**** Implementation below. Do not use below functions ****/
-
-namespace ArduinoSort {
-template <typename AnyType>
-bool builtinLargerThan(AnyType first, AnyType second) {
-  return first > second;
-}
-
-template <>
-bool builtinLargerThan(char *first, char *second) {
-  return strcmp(first, second) > 0;
-}
-
-template <typename AnyType>
-void insertionSort(AnyType array[], size_t sizeOfArray, bool reverse,
-                   bool (*largerThan)(AnyType, AnyType)) {
-  for (size_t i = 1; i < sizeOfArray; i++) {
-    for (size_t j = i; j > 0 && (largerThan(array[j - 1], array[j]) != reverse);
-         j--) {
-      AnyType tmp = array[j - 1];
-      array[j - 1] = array[j];
-      array[j] = tmp;
-    }
-  }
-}
-}  // namespace ArduinoSort
-
-template <typename AnyType>
-void sortArray(AnyType array[], size_t sizeOfArray) {
-  ArduinoSort::insertionSort(array, sizeOfArray, false,
-                             ArduinoSort::builtinLargerThan);
-}
-
-template <typename AnyType>
-void sortArrayReverse(AnyType array[], size_t sizeOfArray) {
-  ArduinoSort::insertionSort(array, sizeOfArray, true,
-                             ArduinoSort::builtinLargerThan);
-}
-
-template <typename AnyType>
-void sortArray(AnyType array[], size_t sizeOfArray,
-               bool (*largerThan)(AnyType, AnyType)) {
-  ArduinoSort::insertionSort(array, sizeOfArray, false, largerThan);
-}
-
-template <typename AnyType>
-void sortArrayReverse(AnyType array[], size_t sizeOfArray,
-                      bool (*largerThan)(AnyType, AnyType)) {
-  ArduinoSort::insertionSort(array, sizeOfArray, true, largerThan);
-}
-
-#endif
-
-// ArduinoSort end
+#include "timed_state.h"
+#include "arduino_sort.h"
+#include "line_follow_robot_consts.h"
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define OLED_RESET 28  // 4 // Reset pin # (or -1 if sharing Arduino reset pin)
@@ -142,19 +31,6 @@ unsigned long tilt_for_charger_prev_alt_time = 0;
 // sense is happening. Positive number means currently which if branch
 // are we running.
 int debug_number = 0;
-
-#define PWMA 12  // Motor A PWM
-#define DIRA1 34
-#define DIRA2 35  // Motor A Direction
-#define PWMB 8    // Motor B PWM
-#define DIRB1 37
-#define DIRB2 36  // Motor B Direction
-#define PWMC 9    // Motor C PWM
-#define DIRC1 43
-#define DIRC2 42  // Motor C Direction
-#define PWMD 5    // Motor D PWM
-#define DIRD1 A4  // 26
-#define DIRD2 A5  // 27  //Motor D Direction
 
 // Skipping offsets here since it makes no sense.
 

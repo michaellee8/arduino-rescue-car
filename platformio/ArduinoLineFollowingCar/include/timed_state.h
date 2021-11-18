@@ -8,9 +8,9 @@ class State {
     protected:
         bool isEntered = false;
     public:
-        virtual void enter();
-        virtual void exit();
-        virtual bool isInside();
+        virtual void Enter();
+        virtual void Exit();
+        virtual bool IsInside();
 };
 
 class TimedState: public State {
@@ -19,9 +19,9 @@ class TimedState: public State {
         unsigned long period = 100;
     public:
         TimedState(unsigned long period);
-        void enter() override;
-        void exit() override;
-        bool isInside() override;
+        void Enter() override;
+        void Exit() override;
+        bool IsInside() override;
 };
 
 #endif

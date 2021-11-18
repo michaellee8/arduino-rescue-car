@@ -7,6 +7,7 @@
 #include "timed_state.h"
 #include "arduino_sort.h"
 #include "line_follow_robot_consts.h"
+#include "cached_motor.h"
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define OLED_RESET 28  // 4 // Reset pin # (or -1 if sharing Arduino reset pin)
@@ -24,6 +25,12 @@ float current_voltage;
 
 bool is_tilt_for_charger_to_left = true;
 unsigned long tilt_for_charger_prev_alt_time = 0;
+
+TimedState force_forward_state(500);
+
+TimedState turning(3000);
+
+State gotL, gotM, gotR;
 
 // A number variable used for debugging that will be printed on log.
 // Here we use it to log application state;
@@ -60,83 +67,20 @@ int debug_number = 0;
 // Don't use the below two boilerplate function in your code. They are here for
 // convenience. Use the set_motorX_speed wrappers provided below.
 
-// Don't use this boilerplate function.
-void _set_normal_motor_speed(int dirx1_pin, int dirx2_pin, int pwm_pin,
-                             int speed) {
-  int scaled_speed = speed * SPEED_FACTOR / SPEED_DIV_FACTOR;
-  if (scaled_speed == 0) {
-    digitalWrite(dirx1_pin, LOW);
-    digitalWrite(dirx2_pin, LOW);
-    analogWrite(pwm_pin, 0);
-  } else if (scaled_speed > 0) {
-    digitalWrite(dirx1_pin, LOW);
-    digitalWrite(dirx2_pin, HIGH);
-    analogWrite(pwm_pin, scaled_speed);
-  } else if (scaled_speed < 0) {
-    digitalWrite(dirx1_pin, HIGH);
-    digitalWrite(dirx2_pin, LOW);
-    analogWrite(pwm_pin, -scaled_speed);
-  }
-}
 
-// Don't use this boilerplate function.
-void _set_reverse_motor_speed(int dirx1_pin, int dirx2_pin, int pwm_pin,
-                              int speed) {
-  int scaled_speed = speed * SPEED_FACTOR / SPEED_DIV_FACTOR;
-  if (scaled_speed == 0) {
-    digitalWrite(dirx1_pin, LOW);
-    digitalWrite(dirx2_pin, LOW);
-    analogWrite(pwm_pin, 0);
-  } else if (scaled_speed > 0) {
-    digitalWrite(dirx1_pin, HIGH);
-    digitalWrite(dirx2_pin, LOW);
-    analogWrite(pwm_pin, scaled_speed);
-  } else if (scaled_speed < 0) {
-    digitalWrite(dirx1_pin, LOW);
-    digitalWrite(dirx2_pin, HIGH);
-    analogWrite(pwm_pin, -scaled_speed);
-  }
-}
 
 // Skip setting speed if the speed has not changed.
 // We peform state caching here so we don't have to handle it in the logic code.
 
-int motorA_current_speed;
-int motorB_current_speed;
-int motorC_current_speed;
-int motorD_current_speed;
+CachedMotor motorA(DIRA1, DIRA2, PWMA, false);
+CachedMotor motorB(DIRB1, DIRB2, PWMB, true);
+CachedMotor motorC(DIRC1, DIRC2, PWMC, false);
+CachedMotor motorD(DIRD1, DIRD2, PWMD, true);
 
-void set_motorA_speed(int speed) {
-  if (motorA_current_speed == speed) {
-    return;
-  }
-  _set_normal_motor_speed(DIRA1, DIRA2, PWMA, speed);
-  motorA_current_speed = speed;
-}
-
-void set_motorB_speed(int speed) {
-  if (motorB_current_speed == speed) {
-    return;
-  }
-  _set_reverse_motor_speed(DIRB1, DIRB2, PWMB, speed);
-  motorB_current_speed = speed;
-}
-
-void set_motorC_speed(int speed) {
-  if (motorC_current_speed == speed) {
-    return;
-  }
-  _set_normal_motor_speed(DIRC1, DIRC2, PWMC, speed);
-  motorC_current_speed = speed;
-}
-
-void set_motorD_speed(int speed) {
-  if (motorD_current_speed == speed) {
-    return;
-  }
-  _set_reverse_motor_speed(DIRD1, DIRD2, PWMD, speed);
-  motorD_current_speed = speed;
-}
+auto motorLF = motorA;
+auto motorRF = motorB;
+auto motorLB = motorC;
+auto motorRB = motorD;
 
 // Alias of set_motorX_speed for convenience
 // L for left, R for right, F for forward, B for backward.

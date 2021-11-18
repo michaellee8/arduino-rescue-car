@@ -225,7 +225,7 @@ void run_logic() {
   }
 
   if (isLBlack) {
-    motor(-30, -30, 30, 30);ß
+    motor(-30, -30, 30, 30);
     return;
   }
 

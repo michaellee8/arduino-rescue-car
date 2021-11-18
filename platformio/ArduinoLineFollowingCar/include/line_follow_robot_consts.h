@@ -57,5 +57,12 @@
 #define RGB_LIGHT_MODULE_GREEN_PIN A14
 #define RGB_LIGHT_MODULE_BLUE_PIN A15
 
+enum Direction {
+    LEFT,
+    FORWARD,
+    RIGHT
+};
+
+
 
 #endif

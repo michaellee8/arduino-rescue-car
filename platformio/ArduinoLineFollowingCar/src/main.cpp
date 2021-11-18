@@ -4,10 +4,11 @@
 #include <SPI.h>
 #include <Wire.h>
 
-#include "timed_state.h"
 #include "arduino_sort.h"
-#include "line_follow_robot_consts.h"
 #include "cached_motor.h"
+#include "line_follow_robot_consts.h"
+#include "sensors.h"
+#include "timed_state.h"
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define OLED_RESET 28  // 4 // Reset pin # (or -1 if sharing Arduino reset pin)
@@ -21,12 +22,9 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 float distance_in_cm_L;
 float distance_in_cm_R;
 
-
-
-
 TimedState force_forward_state(500);
 
-TimedState turning(3000);
+TimedState turning_state(3000);
 
 State gotL, gotM, gotR;
 
@@ -47,6 +45,19 @@ auto motorRF = motorB;
 auto motorLB = motorC;
 auto motorRB = motorD;
 
+LineSensor lineSensorLF(LINE_SENSOR_LF_ANALOG_PIN);
+LineSensor lineSensorMF(LINE_SENSOR_MF_ANALOG_PIN);
+LineSensor lineSensorRF(LINE_SENSOR_RF_ANALOG_PIN);
+
+bool isLBlack;
+bool isMBlack;
+bool isRBlack;
+
+void measure_sensor() {
+  isLBlack = lineSensorLF.IsOnLine();
+  isMBlack = lineSensorMF.IsOnLine();
+  isRBlack = lineSensorRF.IsOnLine();
+}
 
 void measure_distance() {
   // Measure distance using left and right sonar here.
@@ -108,16 +119,14 @@ void log_to_display() {
   display.print(distance_in_cm_L, 1);
   display.print(",R");
   display.print(distance_in_cm_R, 1);
-  display.print(",V");
-  display.print(current_voltage, 1);
   display.print(",rb");
-  display.print(motorA_current_speed);
+  display.print(motorRB.GetCurrentSpeed());
   display.print(",lb");
-  display.print(motorB_current_speed);
+  display.print(motorLB.GetCurrentSpeed());
   display.print(",rf");
-  display.print(motorC_current_speed);
+  display.print(motorRF.GetCurrentSpeed());
   display.print(",lf");
-  display.print(motorD_current_speed);
+  display.print(motorLF.GetCurrentSpeed());
   display.print(",C");
   display.print(debug_number);
   display.display();
@@ -129,16 +138,14 @@ void log_to_serial() {
   Serial.print(distance_in_cm_L, 1);
   Serial.print(",R");
   Serial.print(distance_in_cm_R, 1);
-  Serial.print(",V");
-  Serial.print(current_voltage, 1);
   Serial.print(",rb");
-  Serial.print(motorA_current_speed);
+  Serial.print(motorRB.GetCurrentSpeed());
   Serial.print(",lb");
-  Serial.print(motorB_current_speed);
+  Serial.print(motorLB.GetCurrentSpeed());
   Serial.print(",rf");
-  Serial.print(motorC_current_speed);
+  Serial.print(motorRF.GetCurrentSpeed());
   Serial.print(",lf");
-  Serial.print(motorD_current_speed);
+  Serial.print(motorLF.GetCurrentSpeed());
   Serial.print(",C");
   Serial.print(debug_number);
   Serial.println();
@@ -156,183 +163,83 @@ void tilt_right(int speed) {
 // here for cleaner code.
 void tilt_left(int speed) { tilt_right(-speed); }
 
-void run_motor_logic() {
-  if (distance_in_cm_L > PHASES_DISTANCE[0] &&
-      distance_in_cm_R > PHASES_DISTANCE[0]) {
-    // Impossible case, probably sensor too close or car misplaced.
-    // We will do nothing.
+void move_forward(int speed) {
+  motorLB.SetSpeed(speed);
+  motorLF.SetSpeed(speed);
+  motorRB.SetSpeed(speed);
+  motorRF.SetSpeed(speed);
+}
 
+void motor(int lf, int lb, int rf, int rb) {
+  motorLF.SetSpeed(lf);
+  motorLB.SetSpeed(lb);
+  motorRF.SetSpeed(rf);
+  motorRB.SetSpeed(rb);
+}
 
-    setLF(0);
-    setLB(0);
-    setRF(0);
-    setRB(0);
-    debug_number = -1;
-    return;
-  }
-  if (distance_in_cm_R <= PHASES_DISTANCE[0] &&
-      distance_in_cm_L > PHASES_DISTANCE[0]) {
-    // Right sensor is aligned but left sensor if not aligned.
-    // Tilt right slowly to get both aligned.
-    debug_number = 1;
-    tilt_right(40);
-    return;
-  }
-  if (distance_in_cm_L <= PHASES_DISTANCE[0] &&
-      distance_in_cm_R > PHASES_DISTANCE[0]) {
-    // Left sensor is aligned but right sensor is not aligned.
-    // Tilt left slowly to get both aligned.
-    debug_number = 2;
-    tilt_left(40);
+void run_logic() {
+  const Direction intended_direction = LEFT;
+
+  if (force_forward_state.IsInside()) {
+    move_forward(60);
     return;
   }
 
-  // Determine current phase
-  int phase = -1;
-
-  for (int i = 0; i < PHASES; i++) {
-    if (distance_in_cm_L <= PHASES_DISTANCE[i] &&
-        distance_in_cm_R <= PHASES_DISTANCE[i]) {
-      phase = i;
-    }
-  }
-  if (phase == -1) {
-    // Impossible!
-    debug_number = -2;
-    return;
-  }
-
-  // In each phases except the final phase we have 3 possible actions.
-  // - Bring Left wheels forward because left sensor is too far.
-  // - Bring Right wheels forward because right sensor is too far.
-  // - Bring the whole car forward when there are no problems.
-
-  if (phase < PHASES - 1) {
-    // We are not in final Phase
-    // In different phase we have different tolarence for left/right sensor
-    // inbalance, since farer the sensor larger the error.
-    float tolarence = 10.0;
-    if (phase >= 0 && phase <= 1) {
-      // For the first two phases we give it a larger tolarence of 5 cm.
-      tolarence = 5.0;
-    } else if (phase >= 2 && phase < PHASES - 1) {
-      // For the later phases we only allow 2 cm.
-      tolarence = 2.0;
-    } else {
-      // Impossible case here.
-      debug_number = -3;
-      return;
-    }
-
-    // Now check for inbalance.
-    // In first two phases we can afford rotating with translation.
-    // In later phases we cannot afford it since it is too close.
-    if (distance_in_cm_L - distance_in_cm_R >= tolarence) {
-      if (phase >= 2) {
-        // Later phases.
-        setLF(30);
-        setLB(30);
-        setRF(-30);
-        setRB(-30);
-        debug_number = 3;
+  if (turning_state.IsInside()) {
+    if (intended_direction == FORWARD) {
+      if (isRBlack) {
+        motor(30, 30, -30, -30);
         return;
       } else {
-        // Earlier phases.
-        setLF(40);
-        setLB(40);
-        setRF(0);
-        setRB(0);
-        debug_number = 4;
-        return;
+        if (isMBlack) {
+          move_forward(60);
+          return;
+        } else {
+          move_forward(-60);
+          return;
+        }
       }
-    } else if (distance_in_cm_R - distance_in_cm_L >= tolarence) {
-      if (phase >= 2) {
-        // Later phases.
-        setRF(30);
-        setRB(30);
-        setLF(-30);
-        setLB(-30);
-        debug_number = 5;
-        return;
-      } else {
-        // Earlier phases.
-        setRF(40);
-        setRB(40);
-        setLF(0);
-        setLB(0);
-        debug_number = 6;
-        return;
+    } else if (intended_direction == LEFT) {
+      if (isRBlack) {
+        gotR.Enter();
       }
-    } else {
-      // Move slower for later phases.
-      if (phase >= 2) {
-        // Later phases.
-        setRF(30);
-        setRB(30);
-        setLF(30);
-        setLB(30);
-        debug_number = 7;
+      if (gotR.IsInside() && !isLBlack && isMBlack) {
+        gotM.Enter();
+      }
+      if (gotM.IsInside() && gotR.IsInside()) {
+        turning_state.Exit();
+        gotM.Exit();
+        gotR.Exit();
+        force_forward_state.Enter();
         return;
       } else {
-        // Earlier phases.
-        setRF(60);
-        setRB(60);
-        setLF(60);
-        setLB(60);
-        debug_number = 8;
+        motor(-30, -30, 30, 30);
         return;
       }
     }
-  } else {
-    // We are in final Phase
-
-    // First make sure left/right sensors are balanced.
-    // tolarence is very low here.
-    float tolarence = 1.5;
-    if (distance_in_cm_L - distance_in_cm_R >= tolarence) {
-      setLF(15);
-      setLB(15);
-      setRF(-15);
-      setRB(-15);
-      debug_number = 9;
-      return;
-    } else if (distance_in_cm_R - distance_in_cm_L >= tolarence) {
-      setLF(-15);
-      setLB(-15);
-      setRF(15);
-      setRB(15);
-      debug_number = 10;
-      return;
-    }
-
-    // If tilt for charger is disabled, then we are done.
-    if (!TILT_FOR_CHARGER) {
-      setRF(0);
-      setRB(0);
-      setLB(0);
-      setLF(0);
-      debug_number = 11;
-      return;
-    }
-
-    // Let's tilt for charger.
-    // We will need to revert the direction if we already tilted for current
-    // direction for 1000 ms (1 second).
-    unsigned long current_time = millis();
-    if (current_time - tilt_for_charger_prev_alt_time > 1000) {
-      is_tilt_for_charger_to_left = !is_tilt_for_charger_to_left;
-      tilt_for_charger_prev_alt_time = current_time;
-    }
-    if (is_tilt_for_charger_to_left) {
-      tilt_left(20);
-      debug_number = 12;
-      return;
-    } else {
-      tilt_right(20);
-      debug_number = 13;
-      return;
-    }
   }
+
+  if (isMBlack && isLBlack) {
+    turning_state.Enter();
+    return;
+  }
+
+  if (isLBlack) {
+    motor(-30, -30, 30, 30);ß
+    return;
+  }
+
+  if (isRBlack) {
+    motor(30, 30, -30, -30);
+    return;
+  }
+
+  if (isMBlack) {
+    move_forward(60);
+    return;
+  }
+
+  move_forward(-60);
 }
 
 void setup() {
@@ -354,6 +261,14 @@ void setup() {
   pinMode(RIGHT_SONIC_ECHO_PIN, INPUT);
   pinMode(RIGHT_SONIC_TRIG_PIN, OUTPUT);
 
+  // Setup line sensor
+  pinMode(LINE_SENSOR_LF_ANALOG_PIN, INPUT);
+  pinMode(LINE_SENSOR_LF_DIGITAL_PIN, INPUT);
+  pinMode(LINE_SENSOR_MF_ANALOG_PIN, INPUT);
+  pinMode(LINE_SENSOR_MF_DIGITAL_PIN, INPUT);
+  pinMode(LINE_SENSOR_RF_ANALOG_PIN, INPUT);
+  pinMode(LINE_SENSOR_RF_DIGITAL_PIN, INPUT);
+
   // Wait for 5 seconds before starting
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -363,9 +278,9 @@ void setup() {
 }
 
 void loop() {
-  check_voltage();
   measure_distance();
-  run_motor_logic();
+  measure_sensor();
+  run_logic();
   log_to_display();
   log_to_serial();
 }

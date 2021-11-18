@@ -20,6 +20,10 @@ void CachedMotor::SetSpeed(int speed) {
   }
 }
 
+int CachedMotor::GetCurrentSpeed(){
+  return current_speed;
+}
+
 void CachedMotor::_set_normal_motor_speed(int dirx1_pin, int dirx2_pin,
                                           int pwm_pin, int speed) {
   int scaled_speed = speed * SPEED_FACTOR / SPEED_DIV_FACTOR;

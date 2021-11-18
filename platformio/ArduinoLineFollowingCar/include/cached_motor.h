@@ -48,6 +48,7 @@ class CachedMotor {
  public:
   CachedMotor(int dirx1_pin, int dirx2_pin, int pwm_pin, bool reversed);
   void SetSpeed(int speed);
+  int GetCurrentSpeed();
 
  private:
   static void _set_normal_motor_speed(int dirx1_pin, int dirx2_pin, int pwm_pin,

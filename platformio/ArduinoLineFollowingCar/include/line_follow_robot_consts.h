@@ -32,4 +32,30 @@
 #define DIRD1 A4  // 26
 #define DIRD2 A5  // 27  //Motor D Direction
 
+#define LINE_SENSOR_THRESHOLD 500
+
+// Middle front line sensor
+#define LINE_SENSOR_MF_DIGITAL_PIN A2
+#define LINE_SENSOR_MF_ANALOG_PIN A3
+
+// Right front line sensor
+#define LINE_SENSOR_RF_DIGITAL_PIN A4
+#define LINE_SENSOR_RF_ANALOG_PIN A5
+
+// Left front line sensor
+#define LINE_SENSOR_LF_DIGITAL_PIN A0
+#define LINE_SENSOR_LF_ANALOG_PIN A1
+
+// Temperature sensor
+#define TEMPERATURE_SENSOR_PIN A8
+
+// Buzzer
+#define BUZZER_PIN A12
+
+// RGB light module
+#define RGB_LIGHT_MODULE_RED_PIN A13
+#define RGB_LIGHT_MODULE_GREEN_PIN A14
+#define RGB_LIGHT_MODULE_BLUE_PIN A15
+
+
 #endif

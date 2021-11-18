@@ -21,10 +21,8 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 float distance_in_cm_L;
 float distance_in_cm_R;
 
-float current_voltage;
 
-bool is_tilt_for_charger_to_left = true;
-unsigned long tilt_for_charger_prev_alt_time = 0;
+
 
 TimedState force_forward_state(500);
 
@@ -39,39 +37,6 @@ State gotL, gotM, gotR;
 // are we running.
 int debug_number = 0;
 
-// Skipping offsets here since it makes no sense.
-
-// Removed all servo code since we are not using camera here.
-
-// We prevent using the provided 8 direction based motor marcos to achieve high
-// precision.
-
-// Let's talk about DC motors confiuration here.
-// The DC motors are not configured in the way explained in the graphs.
-// The actual configuration is like this:
-// 1  ↓A-----B↓  -1
-//     |  |  |
-//     |  ↓  |
-// 1  ↓C-----D↓  -1
-//        |
-//        V
-// Motor B and D are configured in reverse, so to make them drive forward, you
-// need DIRX1 = HIGH and DIRX2 = LOW, and drive backward you do DIRX1 = LOW and
-// DIRX2 = HIGH. Motor A and C are configured normally, so to make them drive
-// forward, you need DIRX1 = LOW and DIRX2 = HIGH, and drive backward you do
-// DIRX1 = HIGH and DIRX2 = LOW.
-
-// So now we can define some functions for setting PWM (motor speed value)
-// Also perform speed scaling here
-
-// Don't use the below two boilerplate function in your code. They are here for
-// convenience. Use the set_motorX_speed wrappers provided below.
-
-
-
-// Skip setting speed if the speed has not changed.
-// We peform state caching here so we don't have to handle it in the logic code.
-
 CachedMotor motorA(DIRA1, DIRA2, PWMA, false);
 CachedMotor motorB(DIRB1, DIRB2, PWMB, true);
 CachedMotor motorC(DIRC1, DIRC2, PWMC, false);
@@ -82,23 +47,6 @@ auto motorRF = motorB;
 auto motorLB = motorC;
 auto motorRB = motorD;
 
-// Alias of set_motorX_speed for convenience
-// L for left, R for right, F for forward, B for backward.
-// Use inline for one less function call, hence better performance.
-
-inline void setLF(int speed) { set_motorA_speed(speed); }
-
-inline void setRF(int speed) { set_motorB_speed(speed); }
-
-inline void setLB(int speed) { set_motorC_speed(speed); }
-
-inline void setRB(int speed) { set_motorD_speed(speed); }
-
-void check_voltage() {
-  // Subroutine for reading voltage
-  int sensorValue = analogRead(A0);
-  current_voltage = sensorValue * 25.0 / 1023.0;
-}
 
 void measure_distance() {
   // Measure distance using left and right sonar here.
@@ -198,10 +146,10 @@ void log_to_serial() {
 
 // Helper functions for tilting since the pattern is hard to remember.
 void tilt_right(int speed) {
-  setRF(-speed);
-  setRB(speed);
-  setLF(speed);
-  setLB(-speed);
+  motorRF.SetSpeed(-speed);
+  motorRB.SetSpeed(speed);
+  motorLF.SetSpeed(speed);
+  motorLB.SetSpeed(-speed);
 }
 
 // tilt_left is just reverse of tilt_right. Make use of negative speed

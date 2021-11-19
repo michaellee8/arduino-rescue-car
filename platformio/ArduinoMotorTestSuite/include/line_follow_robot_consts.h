@@ -40,15 +40,12 @@
 #define LINE_SENSOR_THRESHOLD 500
 
 // Middle front line sensor
-#define LINE_SENSOR_MF_DIGITAL_PIN A2
 #define LINE_SENSOR_MF_ANALOG_PIN A3
 
 // Right front line sensor
-#define LINE_SENSOR_RF_DIGITAL_PIN A4
-#define LINE_SENSOR_RF_ANALOG_PIN A5
+#define LINE_SENSOR_RF_ANALOG_PIN A0
 
 // Left front line sensor
-#define LINE_SENSOR_LF_DIGITAL_PIN A0
 #define LINE_SENSOR_LF_ANALOG_PIN A1
 
 // Temperature sensor

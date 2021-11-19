@@ -36,10 +36,6 @@ void run_logic() {
   int lineSensorMFAnalogValue = analogRead(LINE_SENSOR_MF_ANALOG_PIN);
   int lineSensorRFAnalogValue = analogRead(LINE_SENSOR_RF_ANALOG_PIN);
 
-  int lineSensorLFDigitalValue = analogRead(LINE_SENSOR_LF_DIGITAL_PIN);
-  int lineSensorMFDigitalValue = analogRead(LINE_SENSOR_MF_DIGITAL_PIN);
-  int lineSensorRFDigitalValue = analogRead(LINE_SENSOR_RF_DIGITAL_PIN);
-
   int temperatureSensorAnalogValue = analogRead(TEMPERATURE_SENSOR_PIN);
 
   int buzzerOutput = currentTime % 4000 >= 2000 ? 500 : 1000;
@@ -64,18 +60,6 @@ void run_logic() {
 
   display.print("LSRFA:");
   display.print(lineSensorRFAnalogValue);
-  display.print(", ");
-
-  display.print("LSLFD:");
-  display.print(lineSensorLFDigitalValue);
-  display.print(", ");
-
-  display.print("LSMFD:");
-  display.print(lineSensorMFDigitalValue);
-  display.print(", ");
-
-  display.print("LSRFD:");
-  display.print(lineSensorRFDigitalValue);
   display.print(", ");
 
   display.print("TSAV:");
@@ -121,18 +105,6 @@ void run_logic() {
 
   Serial.print("LSRFA:");
   Serial.print(lineSensorRFAnalogValue);
-  Serial.print(", ");
-
-  Serial.print("LSLFD:");
-  Serial.print(lineSensorLFDigitalValue);
-  Serial.print(", ");
-
-  Serial.print("LSMFD:");
-  Serial.print(lineSensorMFDigitalValue);
-  Serial.print(", ");
-
-  Serial.print("LSRFD:");
-  Serial.print(lineSensorRFDigitalValue);
   Serial.print(", ");
 
   Serial.print("TSAV:");

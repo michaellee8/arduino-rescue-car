@@ -24,7 +24,13 @@ float distance_in_cm_R;
 
 TimedState force_forward_state(500);
 
-TimedState turning_state(3000);
+// TimedState turning_state(3000);
+
+TimedState turning_state(0);
+
+TimedState nothing_seen_continue_orignial_direciton_state(1000);
+
+TimedState nothing_seen_back_state(2000);
 
 State got_l, got_m, got_r;
 
@@ -52,6 +58,8 @@ LineSensor line_sensor_rf(LINE_SENSOR_RF_ANALOG_PIN, LINE_SENSOR_RF_THRESHOLD);
 bool is_l_black;
 bool is_m_black;
 bool is_r_black;
+
+Side last_seen_side = Side::kMiddle;
 
 void MeasureLineSensor() {
   is_l_black = line_sensor_lf.IsOnLine();
@@ -96,12 +104,14 @@ void MeasureDistance() {
   sortArray(duration_l_s, SAMPLE_SIZE);
   sortArray(duration_r_s, SAMPLE_SIZE);
 
-  duration_l = duration_l_s[SAMPLE_SIZE / 2 - 1] + duration_l_s[SAMPLE_SIZE / 2] +
-              duration_l_s[SAMPLE_SIZE / 2 + 1];
+  duration_l = duration_l_s[SAMPLE_SIZE / 2 - 1] +
+               duration_l_s[SAMPLE_SIZE / 2] +
+               duration_l_s[SAMPLE_SIZE / 2 + 1];
   duration_l /= 3.0;
 
-  duration_r = duration_r_s[SAMPLE_SIZE / 2 - 1] + duration_r_s[SAMPLE_SIZE / 2] +
-              duration_r_s[SAMPLE_SIZE / 2 + 1];
+  duration_r = duration_r_s[SAMPLE_SIZE / 2 - 1] +
+               duration_r_s[SAMPLE_SIZE / 2] +
+               duration_r_s[SAMPLE_SIZE / 2 + 1];
   duration_r /= 3.0;
 
   distance_in_cm_L = duration_l / 2.0 / 29.1;
@@ -138,8 +148,8 @@ void LogToDisplay() {
 void LogToSerial() {
   Serial.print("L");
   Serial.print(is_l_black);
-  display.print(",M");
-  display.print(is_m_black);
+  Serial.print(",M");
+  Serial.print(is_m_black);
   Serial.print(",R");
   Serial.print(is_r_black);
   Serial.print(",rb");
@@ -186,6 +196,7 @@ void RunLogic() {
 
   if (force_forward_state.IsInside()) {
     MoveForward(60);
+    debug_number = 11;
     return;
   }
 
@@ -193,13 +204,16 @@ void RunLogic() {
     if (intended_direction == Direction::kForward) {
       if (is_r_black) {
         RunMotor(30, 30, -30, -30);
+        debug_number = 12;
         return;
       } else {
         if (is_m_black) {
           MoveForward(60);
+          debug_number = 13;
           return;
         } else {
           MoveForward(-60);
+          debug_number = 14;
           return;
         }
       }
@@ -215,9 +229,11 @@ void RunLogic() {
         got_m.Exit();
         got_r.Exit();
         force_forward_state.Enter();
+        debug_number = 15;
         return;
       } else {
         RunMotor(-30, -30, 30, 30);
+        debug_number = 16;
         return;
       }
     }
@@ -225,25 +241,48 @@ void RunLogic() {
 
   if (is_m_black && is_l_black) {
     turning_state.Enter();
+    debug_number = 17;
     return;
   }
 
   if (is_l_black) {
+    last_seen_side = Side::kLeft;
     RunMotor(-30, -30, 30, 30);
+    debug_number = 18;
     return;
   }
 
   if (is_r_black) {
+    last_seen_side = Side::kRight;
     RunMotor(30, 30, -30, -30);
+    debug_number = 19;
     return;
   }
 
   if (is_m_black) {
-    MoveForward(60);
+    last_seen_side = Side::kMiddle;
+    MoveForward(30);
+    debug_number = 20;
     return;
   }
 
-  MoveForward(60);
+  // All sensors had no input.
+  switch (last_seen_side) {
+    case Side::kLeft:
+      RunMotor(-30, -30, 30, 30);
+      debug_number = 21;
+      break;
+
+    case Side::kRight:
+      RunMotor(30, 30, -30, -30);
+      debug_number = 22;
+      break;
+
+    case Side::kMiddle:
+      MoveForward(30);
+      debug_number = 23;
+      break;
+  }
 }
 
 void setup() {

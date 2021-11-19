@@ -25,6 +25,8 @@ float distance_in_cm_R;
 
 TimedState force_forward_state(500);
 
+TimedState t_intersection_force_forward_state(500);
+
 TimedState y_intersection_left_turning_state(3000);
 
 TimedState y_intersection_right_turning_state(3000);
@@ -215,9 +217,9 @@ void RunMotor(int lf, int lb, int rf, int rb) {
 }
 
 void RunLogic() {
-  const Direction intended_direction = Direction::kForward;
+  const Direction intended_direction = Direction::kRight;
 
-  if (force_forward_state.IsInside()) {
+  if (force_forward_state.IsInside() || t_intersection_force_forward_state.IsInside()) {
     MoveForward(FORWARD_SPEED);
     debug_number = 11;
     return;
@@ -225,7 +227,7 @@ void RunLogic() {
 
   if (t_intersection_turning_state.IsInside()) {
     if (is_l_black || is_r_black) {
-      // We are not cleard from the intersection yet.
+      // We are not clear from the intersection yet.
       debug_number = 25;
       MoveForward(FORWARD_SPEED);
       return;
@@ -265,6 +267,7 @@ void RunLogic() {
         t_got_l.Exit();
         t_got_m.Exit();
         t_intersection_cleared.Exit();
+        t_intersection_force_forward_state.Enter();
         debug_number = 29;
         return;
       } else {
@@ -287,6 +290,7 @@ void RunLogic() {
         t_got_r.Exit();
         t_got_m.Exit();
         t_intersection_cleared.Exit();
+        t_intersection_force_forward_state.Enter();
         debug_number = 31;
         return;
       } else {

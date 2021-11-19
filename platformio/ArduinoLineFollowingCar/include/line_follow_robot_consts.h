@@ -66,7 +66,7 @@
 #define SERIAL_USE_CLEAR_MAGIC true
 #define SERIAL_CLEAR_MAGIC_STRING "\033[2J\033[1;1H"
 
-#define FORWARD_SPEED 60
+#define FORWARD_SPEED 35
 #define ROTATION_SPEED 25
 
 enum class Direction {

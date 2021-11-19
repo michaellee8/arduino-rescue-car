@@ -45,11 +45,10 @@ auto motorRF = motorB;
 auto motorLB = motorC;
 auto motorRB = motorD;
 
-// Analog seems broken here
-DigitalLineSensor lineSensorLF(LINE_SENSOR_LF_DIGITAL_PIN);
+LineSensor lineSensorLF(LINE_SENSOR_LF_ANALOG_PIN, LINE_SENSOR_LF_THRESHOLD);
 
-DigitalLineSensor lineSensorMF(LINE_SENSOR_MF_DIGITAL_PIN);
-DigitalLineSensor lineSensorRF(LINE_SENSOR_RF_DIGITAL_PIN);
+LineSensor lineSensorMF(LINE_SENSOR_MF_ANALOG_PIN, LINE_SENSOR_MF_THRESHOLD);
+LineSensor lineSensorRF(LINE_SENSOR_RF_ANALOG_PIN, LINE_SENSOR_RF_THRESHOLD);
 
 bool isLBlack;
 bool isMBlack;

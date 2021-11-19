@@ -6,16 +6,9 @@
 class LineSensor {
     protected:
         int analog_pin;
+        int threshold = 150;
     public:
-        LineSensor(int analog_pin);
-        bool IsOnLine();
-};
-
-class DigitalLineSensor {
-    protected:
-        int digital_pin;
-    public:
-        DigitalLineSensor(int digital_pin);
+        LineSensor(int analog_pin, int threshold);
         bool IsOnLine();
 };
 

@@ -30,6 +30,9 @@ float distance_in_cm_R;
 int debug_number = 0;
 
 void run_logic() {
+
+  const int WAIT_TIME = 10 * 1000;
+
   int currentTime = millis();
 
   int lineSensorLFAnalogValue = analogRead(LINE_SENSOR_LF_ANALOG_PIN);
@@ -38,11 +41,11 @@ void run_logic() {
 
   int temperatureSensorAnalogValue = analogRead(TEMPERATURE_SENSOR_PIN);
 
-  int buzzerOutput = currentTime % 4000 >= 2000 ? 500 : 1000;
+  int buzzerOutput = ((currentTime / WAIT_TIME) % 5 + 1) * 200;
 
-  int rgbRedOutput = (currentTime % 1000) % 3 == 0 ? 255 : 0;
-  int rgbBlueOutput = (currentTime % 1000) % 3 == 1 ? 255 : 0;
-  int rgbGreenOutput = (currentTime % 1000) % 3 == 2 ? 255 : 0;
+  int rgbRedOutput = (currentTime / WAIT_TIME) % 3 == 0 ? 255 : 0;
+  int rgbBlueOutput = (currentTime / WAIT_TIME) % 3 == 1 ? 255 : 0;
+  int rgbGreenOutput = (currentTime / WAIT_TIME) % 3 == 2 ? 255 : 0;
 
   display.clearDisplay();
   display.cp437(true);
@@ -84,7 +87,7 @@ void run_logic() {
 
   display.display();
 
-  tone(BUZZER_PIN, buzzerOutput);
+  // tone(BUZZER_PIN, buzzerOutput);
   analogWrite(RGB_LIGHT_MODULE_RED_PIN, rgbRedOutput);
   analogWrite(RGB_LIGHT_MODULE_GREEN_PIN, rgbGreenOutput);
   analogWrite(RGB_LIGHT_MODULE_BLUE_PIN, rgbBlueOutput);
@@ -146,15 +149,12 @@ void setup() {
 
   // Setup line sensor
   pinMode(LINE_SENSOR_LF_ANALOG_PIN, INPUT);
-  pinMode(LINE_SENSOR_LF_DIGITAL_PIN, INPUT);
   pinMode(LINE_SENSOR_MF_ANALOG_PIN, INPUT);
-  pinMode(LINE_SENSOR_MF_DIGITAL_PIN, INPUT);
   pinMode(LINE_SENSOR_RF_ANALOG_PIN, INPUT);
-  pinMode(LINE_SENSOR_RF_DIGITAL_PIN, INPUT);
 
   pinMode(TEMPERATURE_SENSOR_PIN, INPUT);
 
-  pinMode(BUZZER_PIN, OUTPUT);
+  // pinMode(BUZZER_PIN, OUTPUT);
 
   pinMode(RGB_LIGHT_MODULE_BLUE_PIN, OUTPUT);
   pinMode(RGB_LIGHT_MODULE_GREEN_PIN, OUTPUT);

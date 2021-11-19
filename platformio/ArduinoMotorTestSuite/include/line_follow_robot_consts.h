@@ -40,13 +40,13 @@
 #define LINE_SENSOR_THRESHOLD 500
 
 // Middle front line sensor
-#define LINE_SENSOR_MF_ANALOG_PIN A3
+#define LINE_SENSOR_MF_ANALOG_PIN A9
 
 // Right front line sensor
-#define LINE_SENSOR_RF_ANALOG_PIN A0
+#define LINE_SENSOR_RF_ANALOG_PIN A2
 
 // Left front line sensor
-#define LINE_SENSOR_LF_ANALOG_PIN A1
+#define LINE_SENSOR_LF_ANALOG_PIN A0
 
 // Temperature sensor
 #define TEMPERATURE_SENSOR_PIN A8
@@ -58,6 +58,9 @@
 #define RGB_LIGHT_MODULE_RED_PIN A13
 #define RGB_LIGHT_MODULE_GREEN_PIN A14
 #define RGB_LIGHT_MODULE_BLUE_PIN A15
+
+#define SERIAL_USE_CLEAR_MAGIC true
+#define SERIAL_CLEAR_MAGIC_STRING "\033[2J\033[1;1H"
 
 enum Direction {
     LEFT,

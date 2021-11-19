@@ -40,7 +40,7 @@
 class CachedMotor {
  protected:
   int current_speed = 0;
-  bool reveresed = false;
+  bool is_reversed = false;
   int dirx1_pin;
   int dirx2_pin;
   int pwm_pin;

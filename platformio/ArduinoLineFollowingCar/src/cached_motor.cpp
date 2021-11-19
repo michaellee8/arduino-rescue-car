@@ -9,11 +9,11 @@ CachedMotor::CachedMotor(int dirx1_pin, int dirx2_pin, int pwm_pin,
   this->dirx1_pin = dirx1_pin;
   this->dirx2_pin = dirx2_pin;
   this->pwm_pin = pwm_pin;
-  this->reveresed = reveresed;
+  this->is_reversed = reversed;
 }
 
 void CachedMotor::SetSpeed(int speed) {
-  if (reveresed) {
+  if (is_reversed) {
     _set_reverse_motor_speed(dirx1_pin, dirx2_pin, pwm_pin, speed);
   } else {
     _set_normal_motor_speed(dirx1_pin, dirx2_pin, pwm_pin, speed);

@@ -32,19 +32,21 @@
 #define DIRD1 A4  // 26
 #define DIRD2 A5  // 27  //Motor D Direction
 
+#define MOTORA_REVERSED false
+#define MOTORB_REVERSED true
+#define MOTORC_REVERSED false
+#define MOTORD_REVERSED true
+
 #define LINE_SENSOR_THRESHOLD 500
 
 // Middle front line sensor
-#define LINE_SENSOR_MF_DIGITAL_PIN A2
-#define LINE_SENSOR_MF_ANALOG_PIN A3
+#define LINE_SENSOR_MF_ANALOG_PIN A9
 
 // Right front line sensor
-#define LINE_SENSOR_RF_DIGITAL_PIN A4
-#define LINE_SENSOR_RF_ANALOG_PIN A5
+#define LINE_SENSOR_RF_ANALOG_PIN A2
 
 // Left front line sensor
-#define LINE_SENSOR_LF_DIGITAL_PIN A0
-#define LINE_SENSOR_LF_ANALOG_PIN A1
+#define LINE_SENSOR_LF_ANALOG_PIN A0
 
 // Temperature sensor
 #define TEMPERATURE_SENSOR_PIN A8
@@ -56,6 +58,9 @@
 #define RGB_LIGHT_MODULE_RED_PIN A13
 #define RGB_LIGHT_MODULE_GREEN_PIN A14
 #define RGB_LIGHT_MODULE_BLUE_PIN A15
+
+#define SERIAL_USE_CLEAR_MAGIC true
+#define SERIAL_CLEAR_MAGIC_STRING "\033[2J\033[1;1H"
 
 enum Direction {
     LEFT,

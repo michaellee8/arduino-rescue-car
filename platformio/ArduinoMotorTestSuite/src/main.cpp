@@ -35,10 +35,10 @@ State gotL, gotM, gotR;
 // are we running.
 int debug_number = 0;
 
-CachedMotor motorA(DIRA1, DIRA2, PWMA, false);
-CachedMotor motorB(DIRB1, DIRB2, PWMB, true);
-CachedMotor motorC(DIRC1, DIRC2, PWMC, false);
-CachedMotor motorD(DIRD1, DIRD2, PWMD, true);
+CachedMotor motorA(DIRA1, DIRA2, PWMA, MOTORA_REVERSED);
+CachedMotor motorB(DIRB1, DIRB2, PWMB, MOTORB_REVERSED);
+CachedMotor motorC(DIRC1, DIRC2, PWMC, MOTORC_REVERSED);
+CachedMotor motorD(DIRD1, DIRD2, PWMD, MOTORD_REVERSED);
 
 auto motorLF = motorA;
 auto motorRF = motorB;
@@ -72,46 +72,49 @@ void motor(int lf, int lb, int rf, int rb) {
 }
 
 void run_logic() {
+
+  const int SPEED = 100;
+
   const int DELAY_TIME = 10 * 1000;
 
-  log("runnning all motors at 500 for 10 seconds");
-  motor(500, 500, 500, 500);
+  log("runnning all motors at SPEED for 10 seconds");
+  motor(SPEED, SPEED, SPEED, SPEED);
   delay(DELAY_TIME);
 
-  log("runnning all motors at -500 for 10 seconds");
-  motor(-500, -500, -500, -500);
+  log("runnning all motors at -SPEED for 10 seconds");
+  motor(-SPEED, -SPEED, -SPEED, -SPEED);
   delay(DELAY_TIME);
 
-  log("running motorLF at 500 for 10 seconds");
-  motor(500, 0, 0, 0);
+  log("running motorLF at SPEED for 10 seconds");
+  motor(SPEED, 0, 0, 0);
   delay(DELAY_TIME);
 
-  log("running motorLF at -500 for 10 seconds");
-  motor(-500, 0, 0, 0);
+  log("running motorLF at -SPEED for 10 seconds");
+  motor(-SPEED, 0, 0, 0);
   delay(DELAY_TIME);
 
-  log("running motorLB at 500 for 10 seconds");
-  motor(0, 500, 0, 0);
+  log("running motorLB at SPEED for 10 seconds");
+  motor(0, SPEED, 0, 0);
   delay(DELAY_TIME);
 
-  log("running motorLB at -500 for 10 seconds");
-  motor(0, -500, 0, 0);
+  log("running motorLB at -SPEED for 10 seconds");
+  motor(0, -SPEED, 0, 0);
   delay(DELAY_TIME);
 
-  log("running motorRF at 500 for 10 seconds");
-  motor(0, 0, 500, 0);
+  log("running motorRF at SPEED for 10 seconds");
+  motor(0, 0, SPEED, 0);
   delay(DELAY_TIME);
 
-  log("running motorRF at -500 for 10 seconds");
-  motor(0, 0, -500, 0);
+  log("running motorRF at -SPEED for 10 seconds");
+  motor(0, 0, -SPEED, 0);
   delay(DELAY_TIME);
 
-  log("running motorRB at 500 for 10 seconds");
-  motor(0, 0, 0, 500);
+  log("running motorRB at SPEED for 10 seconds");
+  motor(0, 0, 0, SPEED);
   delay(DELAY_TIME);
 
-  log("running motorRB at -500 for 10 seconds");
-  motor(0, 0, 0, -500);
+  log("running motorRB at -SPEED for 10 seconds");
+  motor(0, 0, 0, -SPEED);
   delay(DELAY_TIME);
 }
 

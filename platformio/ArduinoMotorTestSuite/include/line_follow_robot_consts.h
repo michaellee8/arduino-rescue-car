@@ -32,6 +32,11 @@
 #define DIRD1 A4  // 26
 #define DIRD2 A5  // 27  //Motor D Direction
 
+#define MOTORA_REVERSED false
+#define MOTORB_REVERSED true
+#define MOTORC_REVERSED false
+#define MOTORD_REVERSED true
+
 #define LINE_SENSOR_THRESHOLD 500
 
 // Middle front line sensor

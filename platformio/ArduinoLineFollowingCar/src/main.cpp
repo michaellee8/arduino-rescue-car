@@ -25,7 +25,7 @@ float distance_in_cm_R;
 
 TimedState force_forward_state(500);
 
-TimedState t_intersection_force_forward_state(500);
+TimedState t_intersection_force_forward_state(1000);
 
 TimedState y_intersection_left_turning_state(3000);
 
@@ -219,7 +219,8 @@ void RunMotor(int lf, int lb, int rf, int rb) {
 void RunLogic() {
   const Direction intended_direction = Direction::kRight;
 
-  if (force_forward_state.IsInside() || t_intersection_force_forward_state.IsInside()) {
+  if (force_forward_state.IsInside() ||
+      t_intersection_force_forward_state.IsInside()) {
     MoveForward(FORWARD_SPEED);
     debug_number = 11;
     return;
@@ -235,6 +236,7 @@ void RunLogic() {
     if (is_m_black) {
       debug_number = 26;
       t_intersection_cleared.Enter();
+      t_intersection_force_forward_state.Enter();
       return;
     }
     if (!t_intersection_cleared.IsInside()) {
@@ -267,7 +269,6 @@ void RunLogic() {
         t_got_l.Exit();
         t_got_m.Exit();
         t_intersection_cleared.Exit();
-        t_intersection_force_forward_state.Enter();
         debug_number = 29;
         return;
       } else {
@@ -290,7 +291,6 @@ void RunLogic() {
         t_got_r.Exit();
         t_got_m.Exit();
         t_intersection_cleared.Exit();
-        t_intersection_force_forward_state.Enter();
         debug_number = 31;
         return;
       } else {

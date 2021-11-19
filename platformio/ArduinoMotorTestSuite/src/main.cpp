@@ -45,7 +45,7 @@ auto motorRF = motorB;
 auto motorLB = motorC;
 auto motorRB = motorD;
 
-void log_to_display(char* str) {
+void log(char* str) {
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
@@ -53,6 +53,8 @@ void log_to_display(char* str) {
   display.setCursor(0, 0);
   display.print(str);
   display.display();
+
+  Serial.println(str);
 }
 
 void move_forward(int speed) {
@@ -71,39 +73,46 @@ void motor(int lf, int lb, int rf, int rb) {
 
 void run_logic() {
   const int DELAY_TIME = 10 * 1000;
-  
-  log_to_display("running motorLF at 500 for 10 seconds");
-  motor(500, 0, 0, 0);
-  delay(DELAY_TIME);
-  
-  log_to_display("running motorLF at -500 for 10 seconds");
-  motor(-500, 0, 0, 0);
-  delay(DELAY_TIME);
-  
-  log_to_display("running motorLB at 500 for 10 seconds");
-  motor(0, 500, 0, 0);
-  delay(DELAY_TIME);
-  
-  log_to_display("running motorLB at -500 for 10 seconds");
-  motor(0, -500, 0, 0);
-  delay(DELAY_TIME);
-  
-  log_to_display("running motorRF at 500 for 10 seconds");
-  motor(0, 0, 500, 0);
-  delay(DELAY_TIME);
-  
-  log_to_display("running motorRF at -500 for 10 seconds");
-  motor(0, 0, -500, 0);
-  delay(DELAY_TIME);
-  
-  log_to_display("running motorRB at 500 for 10 seconds");
-  motor(0, 0, 0, 500);
-  delay(DELAY_TIME);
-  
-  log_to_display("running motorRB at -500 for 10 seconds");
-  motor(0, 0, 0, -500);
+
+  log("runnning all motors at 500 for 10 seconds");
+  motor(500, 500, 500, 500);
   delay(DELAY_TIME);
 
+  log("runnning all motors at -500 for 10 seconds");
+  motor(-500, -500, -500, -500);
+  delay(DELAY_TIME);
+
+  log("running motorLF at 500 for 10 seconds");
+  motor(500, 0, 0, 0);
+  delay(DELAY_TIME);
+
+  log("running motorLF at -500 for 10 seconds");
+  motor(-500, 0, 0, 0);
+  delay(DELAY_TIME);
+
+  log("running motorLB at 500 for 10 seconds");
+  motor(0, 500, 0, 0);
+  delay(DELAY_TIME);
+
+  log("running motorLB at -500 for 10 seconds");
+  motor(0, -500, 0, 0);
+  delay(DELAY_TIME);
+
+  log("running motorRF at 500 for 10 seconds");
+  motor(0, 0, 500, 0);
+  delay(DELAY_TIME);
+
+  log("running motorRF at -500 for 10 seconds");
+  motor(0, 0, -500, 0);
+  delay(DELAY_TIME);
+
+  log("running motorRB at 500 for 10 seconds");
+  motor(0, 0, 0, 500);
+  delay(DELAY_TIME);
+
+  log("running motorRB at -500 for 10 seconds");
+  motor(0, 0, 0, -500);
+  delay(DELAY_TIME);
 }
 
 void setup() {
@@ -124,6 +133,4 @@ void setup() {
   delay(5000);
 }
 
-void loop() {
-  run_logic();
-}
+void loop() { run_logic(); }

@@ -182,7 +182,7 @@ void RunMotor(int lf, int lb, int rf, int rb) {
 }
 
 void RunLogic() {
-  const Direction intended_direction = LEFT;
+  const Direction intended_direction = Direction::kLeft;
 
   if (force_forward_state.IsInside()) {
     MoveForward(60);
@@ -190,7 +190,7 @@ void RunLogic() {
   }
 
   if (turning_state.IsInside()) {
-    if (intended_direction == FORWARD) {
+    if (intended_direction == Direction::kForward) {
       if (is_r_black) {
         RunMotor(30, 30, -30, -30);
         return;
@@ -203,7 +203,7 @@ void RunLogic() {
           return;
         }
       }
-    } else if (intended_direction == LEFT) {
+    } else if (intended_direction == Direction::kLeft) {
       if (is_r_black) {
         got_r.Enter();
       }

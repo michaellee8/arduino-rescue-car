@@ -66,10 +66,16 @@
 #define SERIAL_USE_CLEAR_MAGIC true
 #define SERIAL_CLEAR_MAGIC_STRING "\033[2J\033[1;1H"
 
-enum Direction {
-    LEFT,
-    FORWARD,
-    RIGHT
+enum class Direction {
+    kLeft,
+    kForward,
+    kRight
+};
+
+enum class Side {
+    kLeft,
+    kMiddle,
+    kRight
 };
 
 

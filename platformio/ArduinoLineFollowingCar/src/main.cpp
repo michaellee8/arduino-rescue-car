@@ -141,6 +141,8 @@ void LogToDisplay() {
   display.print(motor_lf.GetCurrentSpeed());
   display.print(",C");
   display.print(debug_number);
+  display.print(",lss");
+  display.print(last_seen_side);
   display.display();
 }
 

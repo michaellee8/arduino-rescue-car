@@ -6,7 +6,7 @@
 
 class State {
     protected:
-        bool isEntered = false;
+        bool is_entered_ = false;
     public:
         virtual void Enter();
         virtual void Exit();
@@ -15,8 +15,8 @@ class State {
 
 class TimedState: public State {
     protected:
-        unsigned long timestamp = 0;
-        unsigned long period = 100;
+        unsigned long timestamp_ = 0;
+        unsigned long period_ = 100;
     public:
         TimedState(unsigned long period);
         void Enter() override;

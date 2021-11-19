@@ -2,26 +2,26 @@
 
 #include <Arduino.h>
 
-void State::Enter() { isEntered = true; }
+void State::Enter() { is_entered_ = true; }
 
-void State::Exit() { isEntered = false; }
+void State::Exit() { is_entered_ = false; }
 
-bool State::IsInside() { return isEntered; }
+bool State::IsInside() { return is_entered_; }
 
-TimedState::TimedState(unsigned long period) { this->period = period; }
+TimedState::TimedState(unsigned long period) { period_ = period; }
 
 void TimedState::Enter() {
   if (!IsInside()) {
-    isEntered = true;
-    timestamp = millis();
+    is_entered_ = true;
+    timestamp_ = millis();
   }
 }
 
 bool TimedState::IsInside() {
-  return isEntered && millis() - timestamp <= period;
+  return is_entered_ && millis() - timestamp_ <= period_;
 }
 
 void TimedState::Exit() {
-  isEntered = false;
-  timestamp = millis() - period - 100;
+  is_entered_ = false;
+  timestamp_ = millis() - period_ - 100;
 }

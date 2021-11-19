@@ -39,11 +39,11 @@
 
 class CachedMotor {
  protected:
-  int current_speed = 0;
-  bool is_reversed = false;
-  int dirx1_pin;
-  int dirx2_pin;
-  int pwm_pin;
+  int current_speed_ = 0;
+  bool is_reversed_ = false;
+  int dirx1_pin_;
+  int dirx2_pin_;
+  int pwm_pin_;
 
  public:
   CachedMotor(int dirx1_pin, int dirx2_pin, int pwm_pin, bool reversed);

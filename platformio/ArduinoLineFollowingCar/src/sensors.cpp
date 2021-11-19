@@ -4,10 +4,10 @@
 #include "line_follow_robot_consts.h"
 
 LineSensor::LineSensor(int analog_pin, int threshold){
-    this->analog_pin = analog_pin;
-    this->threshold = threshold;
+    analog_pin_ = analog_pin;
+    threshold_ = threshold;
 }
 
 bool LineSensor::IsOnLine(){
-    return analogRead(analog_pin) <= LINE_SENSOR_THRESHOLD;
+    return analogRead(analog_pin_) > this->threshold_;
 }

@@ -7,7 +7,7 @@
 #define SCREEN_HEIGHT 32  // OLED display height, in pixels
 
 #define SPEED_FACTOR 1
-#define SPEED_DIV_FACTOR 1
+#define SPEED_DIV_FACTOR 2
 
 #define SAMPLE_SIZE 5
 
@@ -50,7 +50,7 @@
 
 #define LINE_SENSOR_LF_THRESHOLD 150
 #define LINE_SENSOR_MF_THRESHOLD 150
-#define LINE_SENSOR_RF_THRESHOLD 150
+#define LINE_SENSOR_RF_THRESHOLD 225
 
 // Temperature sensor
 #define TEMPERATURE_SENSOR_PIN A8

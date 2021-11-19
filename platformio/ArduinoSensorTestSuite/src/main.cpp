@@ -22,12 +22,6 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 float distance_in_cm_L;
 float distance_in_cm_R;
 
-TimedState force_forward_state(500);
-
-TimedState turning_state(3000);
-
-State gotL, gotM, gotR;
-
 // A number variable used for debugging that will be printed on log.
 // Here we use it to log application state;
 // If it is negative number that means something that does not make
@@ -35,220 +29,131 @@ State gotL, gotM, gotR;
 // are we running.
 int debug_number = 0;
 
-CachedMotor motorA(DIRA1, DIRA2, PWMA, false);
-CachedMotor motorB(DIRB1, DIRB2, PWMB, true);
-CachedMotor motorC(DIRC1, DIRC2, PWMC, false);
-CachedMotor motorD(DIRD1, DIRD2, PWMD, true);
+void run_logic() {
+  int currentTime = millis();
 
-auto motorLF = motorA;
-auto motorRF = motorB;
-auto motorLB = motorC;
-auto motorRB = motorD;
+  int lineSensorLFAnalogValue = analogRead(LINE_SENSOR_LF_ANALOG_PIN);
+  int lineSensorMFAnalogValue = analogRead(LINE_SENSOR_MF_ANALOG_PIN);
+  int lineSensorRFAnalogValue = analogRead(LINE_SENSOR_RF_ANALOG_PIN);
 
-// Analog seems broken here
-DigitalLineSensor lineSensorLF(LINE_SENSOR_LF_DIGITAL_PIN);
+  int lineSensorLFDigitalValue = analogRead(LINE_SENSOR_LF_DIGITAL_PIN);
+  int lineSensorMFDigitalValue = analogRead(LINE_SENSOR_MF_DIGITAL_PIN);
+  int lineSensorRFDigitalValue = analogRead(LINE_SENSOR_RF_DIGITAL_PIN);
 
-DigitalLineSensor lineSensorMF(LINE_SENSOR_MF_DIGITAL_PIN);
-DigitalLineSensor lineSensorRF(LINE_SENSOR_RF_DIGITAL_PIN);
+  int temperatureSensorAnalogValue = analogRead(TEMPERATURE_SENSOR_PIN);
 
-bool isLBlack;
-bool isMBlack;
-bool isRBlack;
+  int buzzerOutput = currentTime % 4000 >= 2000 ? 500 : 1000;
 
-void measure_sensor() {
-  isLBlack = lineSensorLF.IsOnLine();
-  isMBlack = lineSensorMF.IsOnLine();
-  isRBlack = lineSensorRF.IsOnLine();
-}
+  int rgbRedOutput = (currentTime % 1000) % 3 == 0 ? 255 : 0;
+  int rgbBlueOutput = (currentTime % 1000) % 3 == 1 ? 255 : 0;
+  int rgbGreenOutput = (currentTime % 1000) % 3 == 2 ? 255 : 0;
 
-void measure_distance() {
-  // Measure distance using left and right sonar here.
-  // Measure the distance for SAMPLE_SIZE times, and then take the
-  // average of the middle 3 samples as the final value.
-  // So that we can achieve best accuracy. No need to worry about
-  // time consumed in measuring here since ultrasonic measuring is quick cheap.
-
-  float durationL;
-  float durationR;
-  unsigned long durationLs[SAMPLE_SIZE];
-  unsigned long durationRs[SAMPLE_SIZE];
-
-  // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
-  // Give a short LOW pulse beforehand to ensure a clean HIGH pulse.
-
-  for (int i = 0; i < SAMPLE_SIZE; i++) {
-    digitalWrite(LEFT_SONIC_TRIG_PIN, LOW);
-    delayMicroseconds(5);
-    digitalWrite(LEFT_SONIC_TRIG_PIN, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(LEFT_SONIC_TRIG_PIN, LOW);
-    durationLs[i] = pulseIn(LEFT_SONIC_ECHO_PIN, HIGH);
-
-    // Take some rest before we measure the right sensor.
-    delayMicroseconds(20);
-
-    digitalWrite(RIGHT_SONIC_TRIG_PIN, LOW);
-    delayMicroseconds(5);
-    digitalWrite(RIGHT_SONIC_TRIG_PIN, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(RIGHT_SONIC_TRIG_PIN, LOW);
-    durationRs[i] = pulseIn(RIGHT_SONIC_ECHO_PIN, HIGH);
-  }
-
-  sortArray(durationLs, SAMPLE_SIZE);
-  sortArray(durationRs, SAMPLE_SIZE);
-
-  durationL = durationLs[SAMPLE_SIZE / 2 - 1] + durationLs[SAMPLE_SIZE / 2] +
-              durationLs[SAMPLE_SIZE / 2 + 1];
-  durationL /= 3.0;
-
-  durationR = durationRs[SAMPLE_SIZE / 2 - 1] + durationRs[SAMPLE_SIZE / 2] +
-              durationRs[SAMPLE_SIZE / 2 + 1];
-  durationR /= 3.0;
-
-  distance_in_cm_L = durationL / 2.0 / 29.1;
-  distance_in_cm_R = durationR / 2.0 / 29.1;
-}
-
-// Log all variables to display since we don't have serial port.
-void log_to_display() {
   display.clearDisplay();
-  display.setTextSize(1);
-  display.setTextColor(SSD1306_WHITE);
   display.cp437(true);
   display.setCursor(0, 0);
-  display.print("L");
-  // display.print(isLBlack);
-  display.print(analogRead(LINE_SENSOR_LF_ANALOG_PIN));
-  display.print(",M");
-  // display.print(isMBlack);
-  display.print(analogRead(LINE_SENSOR_MF_ANALOG_PIN));
-  display.print(",R");
-  // display.print(isRBlack);
-  display.print(analogRead(LINE_SENSOR_RF_ANALOG_PIN));
-  display.print(",rb");
-  display.print(motorRB.GetCurrentSpeed());
-  display.print(",lb");
-  display.print(motorLB.GetCurrentSpeed());
-  display.print(",rf");
-  display.print(motorRF.GetCurrentSpeed());
-  display.print(",lf");
-  display.print(motorLF.GetCurrentSpeed());
-  display.print(",C");
-  display.print(debug_number);
+  display.setTextColor(SSD1306_WHITE);
+  display.setTextSize(1);
+
+  display.print("LSLFA:");
+  display.print(lineSensorLFAnalogValue);
+  display.print(", ");
+
+  display.print("LSMFA:");
+  display.print(lineSensorMFAnalogValue);
+  display.print(", ");
+
+  display.print("LSRFA:");
+  display.print(lineSensorRFAnalogValue);
+  display.print(", ");
+
+  display.print("LSLFD:");
+  display.print(lineSensorLFDigitalValue);
+  display.print(", ");
+
+  display.print("LSMFD:");
+  display.print(lineSensorMFDigitalValue);
+  display.print(", ");
+
+  display.print("LSRFD:");
+  display.print(lineSensorRFDigitalValue);
+  display.print(", ");
+
+  display.print("TSAV:");
+  display.print(temperatureSensorAnalogValue);
+  display.print(", ");
+
+  display.print("BO:");
+  display.print(buzzerOutput);
+  display.print(", ");
+
+  display.print("RGBRO:");
+  display.print(rgbRedOutput);
+  display.print(", ");
+
+  display.print("RGBGO:");
+  display.print(rgbGreenOutput);
+  display.print(", ");
+
+  display.print("RGBBO:");
+  display.print(rgbBlueOutput);
+  display.print(", ");
+
   display.display();
-}
 
-// Log all variables to Serial
-void log_to_serial() {
-  Serial.print("L");
-  Serial.print(isLBlack);
-  display.print(",M");
-  display.print(isMBlack);
-  Serial.print(",R");
-  Serial.print(isRBlack);
-  Serial.print(",rb");
-  Serial.print(motorRB.GetCurrentSpeed());
-  Serial.print(",lb");
-  Serial.print(motorLB.GetCurrentSpeed());
-  Serial.print(",rf");
-  Serial.print(motorRF.GetCurrentSpeed());
-  Serial.print(",lf");
-  Serial.print(motorLF.GetCurrentSpeed());
-  Serial.print(",C");
-  Serial.print(debug_number);
-  Serial.println();
-}
+  tone(BUZZER_PIN, buzzerOutput);
+  analogWrite(RGB_LIGHT_MODULE_RED_PIN, rgbRedOutput);
+  analogWrite(RGB_LIGHT_MODULE_GREEN_PIN, rgbGreenOutput);
+  analogWrite(RGB_LIGHT_MODULE_BLUE_PIN, rgbBlueOutput);
 
-// Helper functions for tilting since the pattern is hard to remember.
-void tilt_right(int speed) {
-  motorRF.SetSpeed(-speed);
-  motorRB.SetSpeed(speed);
-  motorLF.SetSpeed(speed);
-  motorLB.SetSpeed(-speed);
-}
-
-// tilt_left is just reverse of tilt_right. Make use of negative speed
-// here for cleaner code.
-void tilt_left(int speed) { tilt_right(-speed); }
-
-void move_forward(int speed) {
-  motorLB.SetSpeed(speed);
-  motorLF.SetSpeed(speed);
-  motorRB.SetSpeed(speed);
-  motorRF.SetSpeed(speed);
-}
-
-void motor(int lf, int lb, int rf, int rb) {
-  motorLF.SetSpeed(lf);
-  motorLB.SetSpeed(lb);
-  motorRF.SetSpeed(rf);
-  motorRB.SetSpeed(rb);
-}
-
-void run_logic() {
-  const Direction intended_direction = LEFT;
-
-  if (force_forward_state.IsInside()) {
-    move_forward(60);
-    return;
+  if (SERIAL_USE_CLEAR_MAGIC) {
+    Serial.print(SERIAL_CLEAR_MAGIC_STRING);
   }
 
-  if (turning_state.IsInside()) {
-    if (intended_direction == FORWARD) {
-      if (isRBlack) {
-        motor(30, 30, -30, -30);
-        return;
-      } else {
-        if (isMBlack) {
-          move_forward(60);
-          return;
-        } else {
-          move_forward(-60);
-          return;
-        }
-      }
-    } else if (intended_direction == LEFT) {
-      if (isRBlack) {
-        gotR.Enter();
-      }
-      if (gotR.IsInside() && !isLBlack && isMBlack) {
-        gotM.Enter();
-      }
-      if (gotM.IsInside() && gotR.IsInside()) {
-        turning_state.Exit();
-        gotM.Exit();
-        gotR.Exit();
-        force_forward_state.Enter();
-        return;
-      } else {
-        motor(-30, -30, 30, 30);
-        return;
-      }
-    }
-  }
+  Serial.println("");
 
-  if (isMBlack && isLBlack) {
-    turning_state.Enter();
-    return;
-  }
+  Serial.print("LSLFA:");
+  Serial.print(lineSensorLFAnalogValue);
+  Serial.print(", ");
 
-  if (isLBlack) {
-    motor(-30, -30, 30, 30);
-    return;
-  }
+  Serial.print("LSMFA:");
+  Serial.print(lineSensorMFAnalogValue);
+  Serial.print(", ");
 
-  if (isRBlack) {
-    motor(30, 30, -30, -30);
-    return;
-  }
+  Serial.print("LSRFA:");
+  Serial.print(lineSensorRFAnalogValue);
+  Serial.print(", ");
 
-  if (isMBlack) {
-    move_forward(60);
-    return;
-  }
+  Serial.print("LSLFD:");
+  Serial.print(lineSensorLFDigitalValue);
+  Serial.print(", ");
 
-  move_forward(-60);
+  Serial.print("LSMFD:");
+  Serial.print(lineSensorMFDigitalValue);
+  Serial.print(", ");
+
+  Serial.print("LSRFD:");
+  Serial.print(lineSensorRFDigitalValue);
+  Serial.print(", ");
+
+  Serial.print("TSAV:");
+  Serial.print(temperatureSensorAnalogValue);
+  Serial.print(", ");
+
+  Serial.print("BO:");
+  Serial.print(buzzerOutput);
+  Serial.print(", ");
+
+  Serial.print("RGBRO:");
+  Serial.print(rgbRedOutput);
+  Serial.print(", ");
+
+  Serial.print("RGBGO:");
+  Serial.print(rgbGreenOutput);
+  Serial.print(", ");
+
+  Serial.print("RGBBO:");
+  Serial.print(rgbBlueOutput);
+  Serial.println(", ");
 }
 
 void setup() {
@@ -260,9 +165,6 @@ void setup() {
   }
 
   display.setRotation(2);
-
-  // Setup Voltage detector
-  pinMode(A0, INPUT);
 
   // Setup ultrasonic sensor
   pinMode(LEFT_SONIC_ECHO_PIN, INPUT);
@@ -278,6 +180,14 @@ void setup() {
   pinMode(LINE_SENSOR_RF_ANALOG_PIN, INPUT);
   pinMode(LINE_SENSOR_RF_DIGITAL_PIN, INPUT);
 
+  pinMode(TEMPERATURE_SENSOR_PIN, INPUT);
+
+  pinMode(BUZZER_PIN, OUTPUT);
+
+  pinMode(RGB_LIGHT_MODULE_BLUE_PIN, OUTPUT);
+  pinMode(RGB_LIGHT_MODULE_GREEN_PIN, OUTPUT);
+  pinMode(RGB_LIGHT_MODULE_RED_PIN, OUTPUT);
+
   // Wait for 5 seconds before starting
   display.clearDisplay();
   display.setCursor(0, 0);
@@ -286,10 +196,4 @@ void setup() {
   delay(5000);
 }
 
-void loop() {
-  measure_distance();
-  measure_sensor();
-  run_logic();
-  log_to_display();
-  log_to_serial();
-}
+void loop() { run_logic(); }

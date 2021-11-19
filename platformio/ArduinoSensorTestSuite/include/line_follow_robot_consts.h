@@ -57,12 +57,7 @@
 #define RGB_LIGHT_MODULE_GREEN_PIN A14
 #define RGB_LIGHT_MODULE_BLUE_PIN A15
 
-enum Direction {
-    LEFT,
-    FORWARD,
-    RIGHT
-};
-
-
+#define SERIAL_USE_CLEAR_MAGIC true
+#define SERIAL_CLEAR_MAGIC_STRING "\033[2J\033[1;1H"
 
 #endif

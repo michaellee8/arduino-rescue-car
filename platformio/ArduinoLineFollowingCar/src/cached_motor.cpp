@@ -13,11 +13,15 @@ CachedMotor::CachedMotor(int dirx1_pin, int dirx2_pin, int pwm_pin,
 }
 
 void CachedMotor::SetSpeed(int speed) {
+  if (current_speed_ == speed){
+    return;
+  }
   if (is_reversed_) {
     _set_reverse_motor_speed(dirx1_pin_, dirx2_pin_, pwm_pin_, speed);
   } else {
     _set_normal_motor_speed(dirx1_pin_, dirx2_pin_, pwm_pin_, speed);
   }
+  current_speed_ = speed;
 }
 
 int CachedMotor::GetCurrentSpeed(){

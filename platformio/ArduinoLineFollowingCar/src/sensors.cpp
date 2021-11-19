@@ -9,5 +9,10 @@ LineSensor::LineSensor(int analog_pin, int threshold){
 }
 
 bool LineSensor::IsOnLine(){
-    return analogRead(analog_pin_) > this->threshold_;
+    prev_value_ = analogRead(analog_pin_);
+    return prev_value_ > threshold_;
+}
+
+int LineSensor::PrevAnalogValue(){
+    return prev_value_;
 }

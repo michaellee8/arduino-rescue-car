@@ -9,6 +9,7 @@
 #include "line_follow_robot_consts.h"
 #include "sensors.h"
 #include "timed_state.h"
+#include "utils.h"
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define OLED_RESET 28  // 4 // Reset pin # (or -1 if sharing Arduino reset pin)
@@ -24,9 +25,7 @@ float distance_in_cm_R;
 
 TimedState force_forward_state(500);
 
-// TimedState turning_state(3000);
-
-TimedState turning_state(0);
+TimedState turning_state(3000);
 
 TimedState nothing_seen_continue_orignial_direciton_state(1000);
 
@@ -127,10 +126,16 @@ void LogToDisplay() {
   display.setCursor(0, 0);
   display.print("L");
   display.print(is_l_black);
+  display.print(",Lv");
+  display.print(line_sensor_lf.PrevAnalogValue());
   display.print(",M");
   display.print(is_m_black);
+  display.print(",Mv");
+  display.print(line_sensor_mf.PrevAnalogValue());
   display.print(",R");
   display.print(is_r_black);
+  display.print(",Rv");
+  display.print(line_sensor_rf.PrevAnalogValue());
   display.print(",rb");
   display.print(motor_rb.GetCurrentSpeed());
   display.print(",lb");
@@ -142,7 +147,7 @@ void LogToDisplay() {
   display.print(",C");
   display.print(debug_number);
   display.print(",lss");
-  display.print(last_seen_side);
+  display.print(convertSideToString(last_seen_side));
   display.display();
 }
 
@@ -150,10 +155,16 @@ void LogToDisplay() {
 void LogToSerial() {
   Serial.print("L");
   Serial.print(is_l_black);
+  Serial.print(",Lv");
+  Serial.print(line_sensor_lf.PrevAnalogValue());
   Serial.print(",M");
   Serial.print(is_m_black);
+  Serial.print(",Mv");
+  Serial.print(line_sensor_mf.PrevAnalogValue());
   Serial.print(",R");
   Serial.print(is_r_black);
+  Serial.print(",Rv");
+  Serial.print(line_sensor_rf.PrevAnalogValue());
   Serial.print(",rb");
   Serial.print(motor_rb.GetCurrentSpeed());
   Serial.print(",lb");
@@ -164,6 +175,8 @@ void LogToSerial() {
   Serial.print(motor_lf.GetCurrentSpeed());
   Serial.print(",C");
   Serial.print(debug_number);
+  Serial.print(",lss");
+  Serial.print(convertSideToString(last_seen_side));
   Serial.println();
 }
 
@@ -194,10 +207,10 @@ void RunMotor(int lf, int lb, int rf, int rb) {
 }
 
 void RunLogic() {
-  const Direction intended_direction = Direction::kLeft;
+  const Direction intended_direction = Direction::kForward;
 
   if (force_forward_state.IsInside()) {
-    MoveForward(60);
+    MoveForward(FORWARD_SPEED);
     debug_number = 11;
     return;
   }
@@ -205,16 +218,16 @@ void RunLogic() {
   if (turning_state.IsInside()) {
     if (intended_direction == Direction::kForward) {
       if (is_r_black) {
-        RunMotor(30, 30, -30, -30);
+        RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED, -ROTATION_SPEED);
         debug_number = 12;
         return;
       } else {
         if (is_m_black) {
-          MoveForward(60);
+          MoveForward(FORWARD_SPEED);
           debug_number = 13;
           return;
         } else {
-          MoveForward(-60);
+          MoveForward(FORWARD_SPEED);
           debug_number = 14;
           return;
         }
@@ -234,7 +247,7 @@ void RunLogic() {
         debug_number = 15;
         return;
       } else {
-        RunMotor(-30, -30, 30, 30);
+        RunMotor(-ROTATION_SPEED, -ROTATION_SPEED, ROTATION_SPEED, ROTATION_SPEED);
         debug_number = 16;
         return;
       }
@@ -249,21 +262,21 @@ void RunLogic() {
 
   if (is_l_black) {
     last_seen_side = Side::kLeft;
-    RunMotor(-30, -30, 30, 30);
+    RunMotor(-ROTATION_SPEED, -ROTATION_SPEED, ROTATION_SPEED, ROTATION_SPEED);
     debug_number = 18;
     return;
   }
 
   if (is_r_black) {
     last_seen_side = Side::kRight;
-    RunMotor(30, 30, -30, -30);
+    RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED, -ROTATION_SPEED);
     debug_number = 19;
     return;
   }
 
   if (is_m_black) {
     last_seen_side = Side::kMiddle;
-    MoveForward(30);
+    MoveForward(FORWARD_SPEED);
     debug_number = 20;
     return;
   }
@@ -271,17 +284,17 @@ void RunLogic() {
   // All sensors had no input.
   switch (last_seen_side) {
     case Side::kLeft:
-      RunMotor(-30, -30, 30, 30);
+      RunMotor(-ROTATION_SPEED, -ROTATION_SPEED, ROTATION_SPEED, ROTATION_SPEED);
       debug_number = 21;
       break;
 
     case Side::kRight:
-      RunMotor(30, 30, -30, -30);
+      RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED, -ROTATION_SPEED);
       debug_number = 22;
       break;
 
     case Side::kMiddle:
-      MoveForward(30);
+      MoveForward(FORWARD_SPEED);
       debug_number = 23;
       break;
   }
@@ -320,9 +333,9 @@ void setup() {
 }
 
 void loop() {
-  MeasureDistance();
+  // MeasureDistance();
   MeasureLineSensor();
   RunLogic();
-  LogToDisplay();
-  LogToSerial();
+  // LogToDisplay();
+  // LogToSerial();
 }

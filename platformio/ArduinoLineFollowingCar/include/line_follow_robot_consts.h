@@ -48,9 +48,9 @@
 // Left front line sensor
 #define LINE_SENSOR_LF_ANALOG_PIN A0
 
-#define LINE_SENSOR_LF_THRESHOLD 150
-#define LINE_SENSOR_MF_THRESHOLD 100
-#define LINE_SENSOR_RF_THRESHOLD 100
+#define LINE_SENSOR_LF_THRESHOLD 350
+#define LINE_SENSOR_MF_THRESHOLD 350
+#define LINE_SENSOR_RF_THRESHOLD 350
 
 // Temperature sensor
 #define TEMPERATURE_SENSOR_PIN A8
@@ -65,6 +65,9 @@
 
 #define SERIAL_USE_CLEAR_MAGIC true
 #define SERIAL_CLEAR_MAGIC_STRING "\033[2J\033[1;1H"
+
+#define FORWARD_SPEED 60
+#define ROTATION_SPEED 25
 
 enum class Direction {
     kLeft,

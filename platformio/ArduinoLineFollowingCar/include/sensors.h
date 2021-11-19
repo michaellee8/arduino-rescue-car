@@ -7,9 +7,11 @@ class LineSensor {
     protected:
         int analog_pin_;
         int threshold_ = 150;
+        int prev_value_;
     public:
         LineSensor(int analog_pin, int threshold);
         bool IsOnLine();
+        int PrevAnalogValue();
 };
 
 #endif

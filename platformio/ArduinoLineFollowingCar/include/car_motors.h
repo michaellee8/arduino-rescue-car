@@ -33,6 +33,10 @@ class CarMotors {
   void SetByLetter(int a, int b, int c, int d);
 
   void SetByPos(int speed_lf, int speed_lb, int speed_rf, int speed_rb);
+
+  void Stop();
+
+  void GetMotorsSpeed(int (&speeds)[4]);
 };
 
 #endif

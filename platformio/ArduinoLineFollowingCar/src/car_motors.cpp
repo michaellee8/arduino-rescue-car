@@ -58,3 +58,17 @@ void CarMotors::SetByPos(int speed_lf, int speed_lb, int speed_rf,
   rf.SetSpeed(speed_rf);
   rb.SetSpeed(speed_rb);
 }
+
+void CarMotors::Stop() {
+  lf.SetSpeed(0);
+  lb.SetSpeed(0);
+  rf.SetSpeed(0);
+  rb.SetSpeed(0);
+}
+
+void CarMotors::GetMotorsSpeed(int (&speeds)[4]){
+  speeds[0] = motors_[0].GetCurrentSpeed();
+  speeds[1] = motors_[1].GetCurrentSpeed();
+  speeds[2] = motors_[2].GetCurrentSpeed();
+  speeds[3] = motors_[3].GetCurrentSpeed();
+}

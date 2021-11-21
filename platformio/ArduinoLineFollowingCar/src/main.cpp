@@ -2,11 +2,12 @@
 #include <Adafruit_SSD1306.h>
 #include <Arduino.h>
 #include <SPI.h>
-#include <Wire.h>
 #include <TimedState.h>
+#include <Wire.h>
 
 #include "arduino_sort.h"
 #include "cached_motor.h"
+#include "car_motors.h"
 #include "line_follow_robot_consts.h"
 #include "sensors.h"
 #include "utils.h"
@@ -55,10 +56,7 @@ CachedMotor motor_b(kDirB1Pin, kDirB2Pin, kPwmBPin, kMotorBReversed);
 CachedMotor motor_c(kDirC1Pin, kDirC2Pin, kPwmCPin, kMotorCReversed);
 CachedMotor motor_d(kDirD1Pin, kDirD2Pin, kPwmDPin, kMotorDReversed);
 
-auto motor_lf = motor_a;
-auto motor_rf = motor_b;
-auto motor_lb = motor_c;
-auto motor_rb = motor_d;
+CarMotors motors(motor_a, motor_b, motor_c, motor_d);
 
 LineSensor line_sensor_lf(kLineSensorLFAnalogPin, kLineSensorLFThreshold);
 LineSensor line_sensor_mf(kLineSensorMFAnalogPin, kLineSensorMFThreshold);
@@ -129,6 +127,8 @@ void MeasureDistance() {
 
 // Log all variables to display since we don't have serial port.
 void LogToDisplay() {
+  int motor_speeds[4];
+  motors.GetMotorsSpeed(motor_speeds);
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
@@ -147,13 +147,13 @@ void LogToDisplay() {
   display.print(",Rv");
   display.print(line_sensor_rf.PrevAnalogValue());
   display.print(",rb");
-  display.print(motor_rb.GetCurrentSpeed());
+  display.print(motor_speeds[3]);
   display.print(",lb");
-  display.print(motor_lb.GetCurrentSpeed());
+  display.print(motor_speeds[2]);
   display.print(",rf");
-  display.print(motor_rf.GetCurrentSpeed());
+  display.print(motor_speeds[1]);
   display.print(",lf");
-  display.print(motor_lf.GetCurrentSpeed());
+  display.print(motor_speeds[0]);
   display.print(",C");
   display.print(debug_number);
   display.print(",lss");
@@ -163,6 +163,8 @@ void LogToDisplay() {
 
 // Log all variables to Serial
 void LogToSerial() {
+  int motor_speeds[4];
+  motors.GetMotorsSpeed(motor_speeds);
   Serial.print("L");
   Serial.print(is_l_black);
   Serial.print(",Lv");
@@ -176,13 +178,13 @@ void LogToSerial() {
   Serial.print(",Rv");
   Serial.print(line_sensor_rf.PrevAnalogValue());
   Serial.print(",rb");
-  Serial.print(motor_rb.GetCurrentSpeed());
+  Serial.print(motor_speeds[3]);
   Serial.print(",lb");
-  Serial.print(motor_lb.GetCurrentSpeed());
+  Serial.print(motor_speeds[2]);
   Serial.print(",rf");
-  Serial.print(motor_rf.GetCurrentSpeed());
+  Serial.print(motor_speeds[1]);
   Serial.print(",lf");
-  Serial.print(motor_lf.GetCurrentSpeed());
+  Serial.print(motor_speeds[0]);
   Serial.print(",C");
   Serial.print(debug_number);
   Serial.print(",lss");
@@ -190,47 +192,21 @@ void LogToSerial() {
   Serial.println();
 }
 
-// Helper functions for tilting since the pattern is hard to remember.
-void TiltRight(int speed) {
-  motor_rf.SetSpeed(-speed);
-  motor_rb.SetSpeed(speed);
-  motor_lf.SetSpeed(speed);
-  motor_lb.SetSpeed(-speed);
-}
-
-// TiltLeft is just reverse of TiltRight. Make use of negative speed
-// here for cleaner code.
-void TiltLeft(int speed) { TiltRight(-speed); }
-
-void MoveForward(int speed) {
-  motor_lb.SetSpeed(speed);
-  motor_lf.SetSpeed(speed);
-  motor_rb.SetSpeed(speed);
-  motor_rf.SetSpeed(speed);
-}
-
-void RunMotor(int lf, int lb, int rf, int rb) {
-  motor_lf.SetSpeed(lf);
-  motor_lb.SetSpeed(lb);
-  motor_rf.SetSpeed(rf);
-  motor_rb.SetSpeed(rb);
-}
-
 void RunLogic() {
   const Direction intended_direction = Direction::kRight;
 
   if (force_forward_state.isInside() ||
       t_intersection_force_forward_state.isInside()) {
-    MoveForward(kForwardSpeed);
+    motors.Forward(kForwardSpeed);
     debug_number = 11;
     return;
   }
 
   if (t_intersection_turning_state.isInside()) {
     if (is_l_black || is_r_black) {
-      // We are not clear from the intersection yet.
+      // We are not clear from the intersfection yet.
       debug_number = 25;
-      MoveForward(kForwardSpeed);
+      motors.Forward(kForwardSpeed);
       return;
     }
     if (is_m_black) {
@@ -242,7 +218,7 @@ void RunLogic() {
     if (!t_intersection_cleared.isInside()) {
       // Impossible case!
       debug_number = 27;
-      RunMotor(0, 0, 0, 0);
+      motors.Stop();
       return;
     }
     // We are cleared! Let's do the rotation.
@@ -272,8 +248,7 @@ void RunLogic() {
         debug_number = 29;
         return;
       } else {
-        RunMotor(-kRotationSpeed, -kRotationSpeed, kRotationSpeed,
-                 kRotationSpeed);
+        motors.Rotate(-kRotationSpeed);
         debug_number = 30;
         return;
       }
@@ -294,8 +269,7 @@ void RunLogic() {
         debug_number = 31;
         return;
       } else {
-        RunMotor(kRotationSpeed, kRotationSpeed, -kRotationSpeed,
-                 -kRotationSpeed);
+        motors.Rotate(kRotationSpeed);
         debug_number = 32;
         return;
       }
@@ -306,17 +280,16 @@ void RunLogic() {
     if (intended_direction == Direction::kForward ||
         intended_direction == Direction::kRight) {
       if (is_r_black) {
-        RunMotor(kRotationSpeed, kRotationSpeed, -kRotationSpeed,
-                 -kRotationSpeed);
+        motors.Rotate(kRotationSpeed);
         debug_number = 12;
         return;
       } else {
         if (is_m_black) {
-          MoveForward(kForwardSpeed);
+          motors.Forward(kForwardSpeed);
           debug_number = 13;
           return;
         } else {
-          MoveForward(kForwardSpeed);
+          motors.Forward(kForwardSpeed);
           debug_number = 14;
           return;
         }
@@ -336,8 +309,7 @@ void RunLogic() {
         debug_number = 15;
         return;
       } else {
-        RunMotor(-kRotationSpeed, -kRotationSpeed, kRotationSpeed,
-                 kRotationSpeed);
+        motors.Rotate(-kRotationSpeed);
         debug_number = 16;
         return;
       }
@@ -348,17 +320,16 @@ void RunLogic() {
     if (intended_direction == Direction::kForward ||
         intended_direction == Direction::kLeft) {
       if (is_r_black) {
-        RunMotor(kRotationSpeed, kRotationSpeed, -kRotationSpeed,
-                 -kRotationSpeed);
+        motors.Rotate(kRotationSpeed);
         debug_number = 12;
         return;
       } else {
         if (is_m_black) {
-          MoveForward(kForwardSpeed);
+          motors.Forward(kForwardSpeed);
           debug_number = 13;
           return;
         } else {
-          MoveForward(kForwardSpeed);
+          motors.Forward(kForwardSpeed);
           debug_number = 14;
           return;
         }
@@ -378,8 +349,7 @@ void RunLogic() {
         debug_number = 29;
         return;
       } else {
-        RunMotor(kRotationSpeed, kRotationSpeed, -kRotationSpeed,
-                 -kRotationSpeed);
+        motors.Rotate(kRotationSpeed);
         debug_number = 30;
         return;
       }
@@ -406,21 +376,21 @@ void RunLogic() {
 
   if (is_l_black) {
     last_seen_side = Side::kLeft;
-    RunMotor(-kRotationSpeed, -kRotationSpeed, kRotationSpeed, kRotationSpeed);
+    motors.Rotate(-kRotationSpeed);
     debug_number = 18;
     return;
   }
 
   if (is_r_black) {
     last_seen_side = Side::kRight;
-    RunMotor(kRotationSpeed, kRotationSpeed, -kRotationSpeed, -kRotationSpeed);
+    motors.Rotate(kRotationSpeed);
     debug_number = 19;
     return;
   }
 
   if (is_m_black) {
     last_seen_side = Side::kMiddle;
-    MoveForward(kForwardSpeed);
+    motors.Forward(kForwardSpeed);
     debug_number = 20;
     return;
   }
@@ -428,19 +398,17 @@ void RunLogic() {
   // All sensors had no input.
   switch (last_seen_side) {
     case Side::kLeft:
-      RunMotor(-kRotationSpeed, -kRotationSpeed, kRotationSpeed,
-               kRotationSpeed);
+      motors.Rotate(-kRotationSpeed);
       debug_number = 21;
       break;
 
     case Side::kRight:
-      RunMotor(kRotationSpeed, kRotationSpeed, -kRotationSpeed,
-               -kRotationSpeed);
+      motors.Rotate(kRotationSpeed);
       debug_number = 22;
       break;
 
     case Side::kMiddle:
-      MoveForward(kForwardSpeed);
+      motors.Forward(kForwardSpeed);
       debug_number = 23;
       break;
   }

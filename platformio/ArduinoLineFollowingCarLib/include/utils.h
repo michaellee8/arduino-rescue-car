@@ -3,8 +3,8 @@
 
 #include <line_follow_robot_consts.h>
 
-char* convertDirectionToString(Direction v);
+const char* ConvertDirectionToString(Direction v);
 
-char* convertSideToString(Side v);
+const char* ConvertSideToString(Side v);
 
 #endif

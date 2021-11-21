@@ -2,18 +2,14 @@
 #include <Adafruit_SSD1306.h>
 #include <Arduino.h>
 #include <SPI.h>
+#include <TimedState.h>
 #include <Wire.h>
 
-#include "arduino_sort.h"
-#include "cached_motor.h"
-#include "line_follow_robot_consts.h"
-#include "sensors.h"
-#include "timed_state.h"
-#include "utils.h"
+#include <line_following_car_lib.h>
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define OLED_RESET 28  // 4 // Reset pin # (or -1 if sharing Arduino reset pin)
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_SSD1306 display(kScreenWidth, kScreenHeight, &Wire, OLED_RESET);
 
 // Arduino has no double, double is float
 // float is slow anyway since it is emulated, Arduino has no FPU
@@ -37,11 +33,11 @@ TimedState nothing_seen_back_state(2000);
 
 TimedState t_intersection_turning_state(3000);
 
-State got_l, got_m, got_r;
+SimpleState got_l, got_m, got_r;
 
-State t_intersection_cleared;
+SimpleState t_intersection_cleared;
 
-State t_got_l, t_got_m, t_got_r;
+SimpleState t_got_l, t_got_m, t_got_r;
 
 // A number variable used for debugging that will be printed on log.
 // Here we use it to log application state;
@@ -50,19 +46,16 @@ State t_got_l, t_got_m, t_got_r;
 // are we running.
 int debug_number = 0;
 
-CachedMotor motor_a(DIRA1, DIRA2, PWMA, false);
-CachedMotor motor_b(DIRB1, DIRB2, PWMB, true);
-CachedMotor motor_c(DIRC1, DIRC2, PWMC, false);
-CachedMotor motor_d(DIRD1, DIRD2, PWMD, true);
+CachedMotor motor_a(kDirA1Pin, kDirA2Pin, kPwmAPin, kMotorAReversed);
+CachedMotor motor_b(kDirB1Pin, kDirB2Pin, kPwmBPin, kMotorBReversed);
+CachedMotor motor_c(kDirC1Pin, kDirC2Pin, kPwmCPin, kMotorCReversed);
+CachedMotor motor_d(kDirD1Pin, kDirD2Pin, kPwmDPin, kMotorDReversed);
 
-auto motor_lf = motor_a;
-auto motor_rf = motor_b;
-auto motor_lb = motor_c;
-auto motor_rb = motor_d;
+CarMotors motors(motor_a, motor_b, motor_c, motor_d);
 
-LineSensor line_sensor_lf(LINE_SENSOR_LF_ANALOG_PIN, LINE_SENSOR_LF_THRESHOLD);
-LineSensor line_sensor_mf(LINE_SENSOR_MF_ANALOG_PIN, LINE_SENSOR_MF_THRESHOLD);
-LineSensor line_sensor_rf(LINE_SENSOR_RF_ANALOG_PIN, LINE_SENSOR_RF_THRESHOLD);
+LineSensor line_sensor_lf(kLineSensorLFAnalogPin, kLineSensorLFThreshold);
+LineSensor line_sensor_mf(kLineSensorMFAnalogPin, kLineSensorMFThreshold);
+LineSensor line_sensor_rf(kLineSensorRFAnalogPin, kLineSensorRFThreshold);
 
 bool is_l_black;
 bool is_m_black;
@@ -78,49 +71,49 @@ void MeasureLineSensor() {
 
 void MeasureDistance() {
   // Measure distance using left and right sonar here.
-  // Measure the distance for SAMPLE_SIZE times, and then take the
+  // Measure the distance for kSampleSize times, and then take the
   // average of the middle 3 samples as the final value.
   // So that we can achieve best accuracy. No need to worry about
   // time consumed in measuring here since ultrasonic measuring is quick cheap.
 
   float duration_l;
   float duration_r;
-  unsigned long duration_l_s[SAMPLE_SIZE];
-  unsigned long duration_r_s[SAMPLE_SIZE];
+  unsigned long duration_l_s[kSampleSize];
+  unsigned long duration_r_s[kSampleSize];
 
   // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
   // Give a short LOW pulse beforehand to ensure a clean HIGH pulse.
 
-  for (int i = 0; i < SAMPLE_SIZE; i++) {
-    digitalWrite(LEFT_SONIC_TRIG_PIN, LOW);
+  for (int i = 0; i < kSampleSize; i++) {
+    digitalWrite(kLeftSonicTrigPin, LOW);
     delayMicroseconds(5);
-    digitalWrite(LEFT_SONIC_TRIG_PIN, HIGH);
+    digitalWrite(kLeftSonicTrigPin, HIGH);
     delayMicroseconds(10);
-    digitalWrite(LEFT_SONIC_TRIG_PIN, LOW);
-    duration_l_s[i] = pulseIn(LEFT_SONIC_ECHO_PIN, HIGH);
+    digitalWrite(kLeftSonicTrigPin, LOW);
+    duration_l_s[i] = pulseIn(kLeftSonicEchoPin, HIGH);
 
     // Take some rest before we measure the right sensor.
     delayMicroseconds(20);
 
-    digitalWrite(RIGHT_SONIC_TRIG_PIN, LOW);
+    digitalWrite(kRightSonicTrigPin, LOW);
     delayMicroseconds(5);
-    digitalWrite(RIGHT_SONIC_TRIG_PIN, HIGH);
+    digitalWrite(kRightSonicTrigPin, HIGH);
     delayMicroseconds(10);
-    digitalWrite(RIGHT_SONIC_TRIG_PIN, LOW);
-    duration_r_s[i] = pulseIn(RIGHT_SONIC_ECHO_PIN, HIGH);
+    digitalWrite(kRightSonicTrigPin, LOW);
+    duration_r_s[i] = pulseIn(kRIghtSonicEchoPin, HIGH);
   }
 
-  sortArray(duration_l_s, SAMPLE_SIZE);
-  sortArray(duration_r_s, SAMPLE_SIZE);
+  sortArray(duration_l_s, kSampleSize);
+  sortArray(duration_r_s, kSampleSize);
 
-  duration_l = duration_l_s[SAMPLE_SIZE / 2 - 1] +
-               duration_l_s[SAMPLE_SIZE / 2] +
-               duration_l_s[SAMPLE_SIZE / 2 + 1];
+  duration_l = duration_l_s[kSampleSize / 2 - 1] +
+               duration_l_s[kSampleSize / 2] +
+               duration_l_s[kSampleSize / 2 + 1];
   duration_l /= 3.0;
 
-  duration_r = duration_r_s[SAMPLE_SIZE / 2 - 1] +
-               duration_r_s[SAMPLE_SIZE / 2] +
-               duration_r_s[SAMPLE_SIZE / 2 + 1];
+  duration_r = duration_r_s[kSampleSize / 2 - 1] +
+               duration_r_s[kSampleSize / 2] +
+               duration_r_s[kSampleSize / 2 + 1];
   duration_r /= 3.0;
 
   distance_in_cm_L = duration_l / 2.0 / 29.1;
@@ -129,6 +122,8 @@ void MeasureDistance() {
 
 // Log all variables to display since we don't have serial port.
 void LogToDisplay() {
+  int motor_speeds[4];
+  motors.GetMotorsSpeed(motor_speeds);
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
@@ -147,22 +142,24 @@ void LogToDisplay() {
   display.print(",Rv");
   display.print(line_sensor_rf.PrevAnalogValue());
   display.print(",rb");
-  display.print(motor_rb.GetCurrentSpeed());
+  display.print(motor_speeds[3]);
   display.print(",lb");
-  display.print(motor_lb.GetCurrentSpeed());
+  display.print(motor_speeds[2]);
   display.print(",rf");
-  display.print(motor_rf.GetCurrentSpeed());
+  display.print(motor_speeds[1]);
   display.print(",lf");
-  display.print(motor_lf.GetCurrentSpeed());
+  display.print(motor_speeds[0]);
   display.print(",C");
   display.print(debug_number);
   display.print(",lss");
-  display.print(convertSideToString(last_seen_side));
+  display.print(ConvertSideToString(last_seen_side));
   display.display();
 }
 
 // Log all variables to Serial
 void LogToSerial() {
+  int motor_speeds[4];
+  motors.GetMotorsSpeed(motor_speeds);
   Serial.print("L");
   Serial.print(is_l_black);
   Serial.print(",Lv");
@@ -176,104 +173,77 @@ void LogToSerial() {
   Serial.print(",Rv");
   Serial.print(line_sensor_rf.PrevAnalogValue());
   Serial.print(",rb");
-  Serial.print(motor_rb.GetCurrentSpeed());
+  Serial.print(motor_speeds[3]);
   Serial.print(",lb");
-  Serial.print(motor_lb.GetCurrentSpeed());
+  Serial.print(motor_speeds[2]);
   Serial.print(",rf");
-  Serial.print(motor_rf.GetCurrentSpeed());
+  Serial.print(motor_speeds[1]);
   Serial.print(",lf");
-  Serial.print(motor_lf.GetCurrentSpeed());
+  Serial.print(motor_speeds[0]);
   Serial.print(",C");
   Serial.print(debug_number);
   Serial.print(",lss");
-  Serial.print(convertSideToString(last_seen_side));
+  Serial.print(ConvertSideToString(last_seen_side));
   Serial.println();
-}
-
-// Helper functions for tilting since the pattern is hard to remember.
-void TiltRight(int speed) {
-  motor_rf.SetSpeed(-speed);
-  motor_rb.SetSpeed(speed);
-  motor_lf.SetSpeed(speed);
-  motor_lb.SetSpeed(-speed);
-}
-
-// TiltLeft is just reverse of TiltRight. Make use of negative speed
-// here for cleaner code.
-void TiltLeft(int speed) { TiltRight(-speed); }
-
-void MoveForward(int speed) {
-  motor_lb.SetSpeed(speed);
-  motor_lf.SetSpeed(speed);
-  motor_rb.SetSpeed(speed);
-  motor_rf.SetSpeed(speed);
-}
-
-void RunMotor(int lf, int lb, int rf, int rb) {
-  motor_lf.SetSpeed(lf);
-  motor_lb.SetSpeed(lb);
-  motor_rf.SetSpeed(rf);
-  motor_rb.SetSpeed(rb);
 }
 
 void RunLogic() {
   const Direction intended_direction = Direction::kRight;
 
-  if (force_forward_state.IsInside() ||
-      t_intersection_force_forward_state.IsInside()) {
-    MoveForward(FORWARD_SPEED);
+  if (force_forward_state.isInside() ||
+      t_intersection_force_forward_state.isInside()) {
+    motors.Forward(kForwardSpeed);
     debug_number = 11;
     return;
   }
 
-  if (t_intersection_turning_state.IsInside()) {
+  if (t_intersection_turning_state.isInside()) {
     if (is_l_black || is_r_black) {
-      // We are not clear from the intersection yet.
+      // We are not clear from the intersfection yet.
       debug_number = 25;
-      MoveForward(FORWARD_SPEED);
+      motors.Forward(kForwardSpeed);
       return;
     }
     if (is_m_black) {
       debug_number = 26;
-      t_intersection_cleared.Enter();
-      t_intersection_force_forward_state.Enter();
+      t_intersection_cleared.enter();
+      t_intersection_force_forward_state.enter();
       return;
     }
-    if (!t_intersection_cleared.IsInside()) {
+    if (!t_intersection_cleared.isInside()) {
       // Impossible case!
       debug_number = 27;
-      RunMotor(0, 0, 0, 0);
+      motors.Stop();
       return;
     }
     // We are cleared! Let's do the rotation.
     if (intended_direction == Direction::kForward) {
       debug_number = 28;
       // To move forward, just exit the state;
-      t_intersection_turning_state.Exit();
-      t_intersection_cleared.Exit();
-      t_got_l.Exit();
-      t_got_m.Exit();
-      t_got_r.Exit();
+      t_intersection_turning_state.exit();
+      t_intersection_cleared.exit();
+      t_got_l.exit();
+      t_got_m.exit();
+      t_got_r.exit();
       return;
     }
 
     if (intended_direction == Direction::kLeft) {
       if (is_l_black) {
-        t_got_l.Enter();
+        t_got_l.enter();
       }
-      if (t_got_l.IsInside() && is_m_black) {
-        t_got_m.Enter();
+      if (t_got_l.isInside() && is_m_black) {
+        t_got_m.enter();
       }
-      if (t_got_l.IsInside() && t_got_m.IsInside()) {
-        t_intersection_turning_state.Exit();
-        t_got_l.Exit();
-        t_got_m.Exit();
-        t_intersection_cleared.Exit();
+      if (t_got_l.isInside() && t_got_m.isInside()) {
+        t_intersection_turning_state.exit();
+        t_got_l.exit();
+        t_got_m.exit();
+        t_intersection_cleared.exit();
         debug_number = 29;
         return;
       } else {
-        RunMotor(-ROTATION_SPEED, -ROTATION_SPEED, ROTATION_SPEED,
-                 ROTATION_SPEED);
+        motors.Rotate(-kRotationSpeed);
         debug_number = 30;
         return;
       }
@@ -281,105 +251,100 @@ void RunLogic() {
 
     if (intended_direction == Direction::kRight) {
       if (is_r_black) {
-        t_got_r.Enter();
+        t_got_r.enter();
       }
-      if (t_got_r.IsInside() && is_m_black) {
-        t_got_m.Enter();
+      if (t_got_r.isInside() && is_m_black) {
+        t_got_m.enter();
       }
-      if (t_got_r.IsInside() && t_got_m.IsInside()) {
-        t_intersection_turning_state.Exit();
-        t_got_r.Exit();
-        t_got_m.Exit();
-        t_intersection_cleared.Exit();
+      if (t_got_r.isInside() && t_got_m.isInside()) {
+        t_intersection_turning_state.exit();
+        t_got_r.exit();
+        t_got_m.exit();
+        t_intersection_cleared.exit();
         debug_number = 31;
         return;
       } else {
-        RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED,
-                 -ROTATION_SPEED);
+        motors.Rotate(kRotationSpeed);
         debug_number = 32;
         return;
       }
     }
   }
 
-  if (y_intersection_left_turning_state.IsInside()) {
+  if (y_intersection_left_turning_state.isInside()) {
     if (intended_direction == Direction::kForward ||
         intended_direction == Direction::kRight) {
       if (is_r_black) {
-        RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED,
-                 -ROTATION_SPEED);
+        motors.Rotate(kRotationSpeed);
         debug_number = 12;
         return;
       } else {
         if (is_m_black) {
-          MoveForward(FORWARD_SPEED);
+          motors.Forward(kForwardSpeed);
           debug_number = 13;
           return;
         } else {
-          MoveForward(FORWARD_SPEED);
+          motors.Forward(kForwardSpeed);
           debug_number = 14;
           return;
         }
       }
     } else if (intended_direction == Direction::kLeft) {
       if (is_r_black) {
-        got_r.Enter();
+        got_r.enter();
       }
-      if (got_r.IsInside() && !is_l_black && is_m_black) {
-        got_m.Enter();
+      if (got_r.isInside() && !is_l_black && is_m_black) {
+        got_m.enter();
       }
-      if (got_m.IsInside() && got_r.IsInside()) {
-        y_intersection_left_turning_state.Exit();
-        got_m.Exit();
-        got_r.Exit();
-        force_forward_state.Enter();
+      if (got_m.isInside() && got_r.isInside()) {
+        y_intersection_left_turning_state.exit();
+        got_m.exit();
+        got_r.exit();
+        force_forward_state.enter();
         debug_number = 15;
         return;
       } else {
-        RunMotor(-ROTATION_SPEED, -ROTATION_SPEED, ROTATION_SPEED,
-                 ROTATION_SPEED);
+        motors.Rotate(-kRotationSpeed);
         debug_number = 16;
         return;
       }
     }
   }
 
-  if (y_intersection_right_turning_state.IsInside()) {
+  if (y_intersection_right_turning_state.isInside()) {
     if (intended_direction == Direction::kForward ||
         intended_direction == Direction::kLeft) {
       if (is_r_black) {
-        RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED,
-                 -ROTATION_SPEED);
+        motors.Rotate(kRotationSpeed);
         debug_number = 12;
         return;
       } else {
         if (is_m_black) {
-          MoveForward(FORWARD_SPEED);
+          motors.Forward(kForwardSpeed);
           debug_number = 13;
           return;
         } else {
-          MoveForward(FORWARD_SPEED);
+          motors.Forward(kForwardSpeed);
           debug_number = 14;
           return;
         }
       }
     } else if (intended_direction == Direction::kRight) {
       if (is_l_black) {
-        got_l.Enter();
+        got_l.enter();
       }
-      if (got_l.IsInside() && !is_r_black && is_m_black) {
-        got_m.Enter();
+      if (got_l.isInside() && !is_r_black && is_m_black) {
+        got_m.enter();
       }
-      if (got_m.IsInside() && got_r.IsInside()) {
-        y_intersection_left_turning_state.Exit();
-        got_m.Exit();
-        got_l.Exit();
-        force_forward_state.Enter();
+      if (got_m.isInside() && got_r.isInside()) {
+        y_intersection_left_turning_state.exit();
+        got_m.exit();
+        got_l.exit();
+        force_forward_state.enter();
         debug_number = 29;
         return;
       } else {
-        RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED,
-                 -ROTATION_SPEED);
+        motors.Rotate(kRotationSpeed);
         debug_number = 30;
         return;
       }
@@ -387,40 +352,40 @@ void RunLogic() {
   }
 
   if (is_l_black && is_m_black && is_r_black) {
-    t_intersection_turning_state.Enter();
+    t_intersection_turning_state.enter();
     debug_number = 24;
     return;
   }
 
-  if (is_m_black && is_l_black && !t_intersection_turning_state.IsInside()) {
-    y_intersection_left_turning_state.Enter();
+  if (is_m_black && is_l_black && !t_intersection_turning_state.isInside()) {
+    y_intersection_left_turning_state.enter();
     debug_number = 17;
     return;
   }
 
-  if (is_m_black && is_r_black && !t_intersection_turning_state.IsInside()) {
-    y_intersection_right_turning_state.Enter();
+  if (is_m_black && is_r_black && !t_intersection_turning_state.isInside()) {
+    y_intersection_right_turning_state.enter();
     debug_number = 31;
     return;
   }
 
   if (is_l_black) {
     last_seen_side = Side::kLeft;
-    RunMotor(-ROTATION_SPEED, -ROTATION_SPEED, ROTATION_SPEED, ROTATION_SPEED);
+    motors.Rotate(-kRotationSpeed);
     debug_number = 18;
     return;
   }
 
   if (is_r_black) {
     last_seen_side = Side::kRight;
-    RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED, -ROTATION_SPEED);
+    motors.Rotate(kRotationSpeed);
     debug_number = 19;
     return;
   }
 
   if (is_m_black) {
     last_seen_side = Side::kMiddle;
-    MoveForward(FORWARD_SPEED);
+    motors.Forward(kForwardSpeed);
     debug_number = 20;
     return;
   }
@@ -428,26 +393,24 @@ void RunLogic() {
   // All sensors had no input.
   switch (last_seen_side) {
     case Side::kLeft:
-      RunMotor(-ROTATION_SPEED, -ROTATION_SPEED, ROTATION_SPEED,
-               ROTATION_SPEED);
+      motors.Rotate(-kRotationSpeed);
       debug_number = 21;
       break;
 
     case Side::kRight:
-      RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED,
-               -ROTATION_SPEED);
+      motors.Rotate(kRotationSpeed);
       debug_number = 22;
       break;
 
     case Side::kMiddle:
-      MoveForward(FORWARD_SPEED);
+      motors.Forward(kForwardSpeed);
       debug_number = 23;
       break;
   }
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(kSerialBaudRate);
 
   // OLED Setup//////////////////////////////////
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {  // Address 0x3C for 128x32
@@ -460,15 +423,15 @@ void setup() {
   pinMode(A0, INPUT);
 
   // Setup ultrasonic sensor
-  pinMode(LEFT_SONIC_ECHO_PIN, INPUT);
-  pinMode(LEFT_SONIC_TRIG_PIN, OUTPUT);
-  pinMode(RIGHT_SONIC_ECHO_PIN, INPUT);
-  pinMode(RIGHT_SONIC_TRIG_PIN, OUTPUT);
+  pinMode(kLeftSonicEchoPin, INPUT);
+  pinMode(kLeftSonicTrigPin, OUTPUT);
+  pinMode(kRIghtSonicEchoPin, INPUT);
+  pinMode(kRightSonicTrigPin, OUTPUT);
 
   // Setup line sensor
-  pinMode(LINE_SENSOR_LF_ANALOG_PIN, INPUT);
-  pinMode(LINE_SENSOR_MF_ANALOG_PIN, INPUT);
-  pinMode(LINE_SENSOR_RF_ANALOG_PIN, INPUT);
+  pinMode(kLineSensorLFAnalogPin, INPUT);
+  pinMode(kLineSensorMFAnalogPin, INPUT);
+  pinMode(kLineSensorRFAnalogPin, INPUT);
 
   // Wait for 5 seconds before starting
   display.clearDisplay();

@@ -13,7 +13,7 @@ CachedMotor::CachedMotor(int dirx1_pin, int dirx2_pin, int pwm_pin,
 }
 
 void CachedMotor::SetSpeed(int speed) {
-  if (current_speed_ == speed){
+  if (current_speed_ == speed) {
     return;
   }
   if (is_reversed_) {
@@ -24,13 +24,11 @@ void CachedMotor::SetSpeed(int speed) {
   current_speed_ = speed;
 }
 
-int CachedMotor::GetCurrentSpeed(){
-  return current_speed_;
-}
+int CachedMotor::GetCurrentSpeed() { return current_speed_; }
 
 void CachedMotor::_set_normal_motor_speed(int dirx1_pin, int dirx2_pin,
                                           int pwm_pin, int speed) {
-  int scaled_speed = speed * SPEED_FACTOR / SPEED_DIV_FACTOR;
+  int scaled_speed = speed * kSpeedFactor / kSpeedDivFactor;
   if (scaled_speed == 0) {
     digitalWrite(dirx1_pin, LOW);
     digitalWrite(dirx2_pin, LOW);
@@ -48,7 +46,7 @@ void CachedMotor::_set_normal_motor_speed(int dirx1_pin, int dirx2_pin,
 
 void CachedMotor::_set_reverse_motor_speed(int dirx1_pin, int dirx2_pin,
                                            int pwm_pin, int speed) {
-  int scaled_speed = speed * SPEED_FACTOR / SPEED_DIV_FACTOR;
+  int scaled_speed = speed * kSpeedFactor / kSpeedDivFactor;
   if (scaled_speed == 0) {
     digitalWrite(dirx1_pin, LOW);
     digitalWrite(dirx2_pin, LOW);

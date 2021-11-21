@@ -5,12 +5,7 @@
 #include <TimedState.h>
 #include <Wire.h>
 
-#include "arduino_sort.h"
-#include "cached_motor.h"
-#include "car_motors.h"
-#include "line_follow_robot_consts.h"
-#include "sensors.h"
-#include "utils.h"
+#include <line_following_car_lib.h>
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define OLED_RESET 28  // 4 // Reset pin # (or -1 if sharing Arduino reset pin)

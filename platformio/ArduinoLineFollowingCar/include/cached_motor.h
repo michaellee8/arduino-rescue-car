@@ -32,8 +32,6 @@
 // Don't use the below two boilerplate function in your code. They are here for
 // convenience. Use the set_motorX_speed wrappers provided below.
 
-
-
 // Skip setting speed if the speed has not changed.
 // We peform state caching here so we don't have to handle it in the logic code.
 

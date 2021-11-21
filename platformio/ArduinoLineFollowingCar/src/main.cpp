@@ -3,12 +3,12 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <Wire.h>
+#include <TimedState.h>
 
 #include "arduino_sort.h"
 #include "cached_motor.h"
 #include "line_follow_robot_consts.h"
 #include "sensors.h"
-#include "timed_state.h"
 #include "utils.h"
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
@@ -37,11 +37,11 @@ TimedState nothing_seen_back_state(2000);
 
 TimedState t_intersection_turning_state(3000);
 
-State got_l, got_m, got_r;
+SimpleState got_l, got_m, got_r;
 
-State t_intersection_cleared;
+SimpleState t_intersection_cleared;
 
-State t_got_l, t_got_m, t_got_r;
+SimpleState t_got_l, t_got_m, t_got_r;
 
 // A number variable used for debugging that will be printed on log.
 // Here we use it to log application state;
@@ -219,14 +219,14 @@ void RunMotor(int lf, int lb, int rf, int rb) {
 void RunLogic() {
   const Direction intended_direction = Direction::kRight;
 
-  if (force_forward_state.IsInside() ||
-      t_intersection_force_forward_state.IsInside()) {
+  if (force_forward_state.isInside() ||
+      t_intersection_force_forward_state.isInside()) {
     MoveForward(FORWARD_SPEED);
     debug_number = 11;
     return;
   }
 
-  if (t_intersection_turning_state.IsInside()) {
+  if (t_intersection_turning_state.isInside()) {
     if (is_l_black || is_r_black) {
       // We are not clear from the intersection yet.
       debug_number = 25;
@@ -235,11 +235,11 @@ void RunLogic() {
     }
     if (is_m_black) {
       debug_number = 26;
-      t_intersection_cleared.Enter();
-      t_intersection_force_forward_state.Enter();
+      t_intersection_cleared.enter();
+      t_intersection_force_forward_state.enter();
       return;
     }
-    if (!t_intersection_cleared.IsInside()) {
+    if (!t_intersection_cleared.isInside()) {
       // Impossible case!
       debug_number = 27;
       RunMotor(0, 0, 0, 0);
@@ -249,26 +249,26 @@ void RunLogic() {
     if (intended_direction == Direction::kForward) {
       debug_number = 28;
       // To move forward, just exit the state;
-      t_intersection_turning_state.Exit();
-      t_intersection_cleared.Exit();
-      t_got_l.Exit();
-      t_got_m.Exit();
-      t_got_r.Exit();
+      t_intersection_turning_state.exit();
+      t_intersection_cleared.exit();
+      t_got_l.exit();
+      t_got_m.exit();
+      t_got_r.exit();
       return;
     }
 
     if (intended_direction == Direction::kLeft) {
       if (is_l_black) {
-        t_got_l.Enter();
+        t_got_l.enter();
       }
-      if (t_got_l.IsInside() && is_m_black) {
-        t_got_m.Enter();
+      if (t_got_l.isInside() && is_m_black) {
+        t_got_m.enter();
       }
-      if (t_got_l.IsInside() && t_got_m.IsInside()) {
-        t_intersection_turning_state.Exit();
-        t_got_l.Exit();
-        t_got_m.Exit();
-        t_intersection_cleared.Exit();
+      if (t_got_l.isInside() && t_got_m.isInside()) {
+        t_intersection_turning_state.exit();
+        t_got_l.exit();
+        t_got_m.exit();
+        t_intersection_cleared.exit();
         debug_number = 29;
         return;
       } else {
@@ -281,16 +281,16 @@ void RunLogic() {
 
     if (intended_direction == Direction::kRight) {
       if (is_r_black) {
-        t_got_r.Enter();
+        t_got_r.enter();
       }
-      if (t_got_r.IsInside() && is_m_black) {
-        t_got_m.Enter();
+      if (t_got_r.isInside() && is_m_black) {
+        t_got_m.enter();
       }
-      if (t_got_r.IsInside() && t_got_m.IsInside()) {
-        t_intersection_turning_state.Exit();
-        t_got_r.Exit();
-        t_got_m.Exit();
-        t_intersection_cleared.Exit();
+      if (t_got_r.isInside() && t_got_m.isInside()) {
+        t_intersection_turning_state.exit();
+        t_got_r.exit();
+        t_got_m.exit();
+        t_intersection_cleared.exit();
         debug_number = 31;
         return;
       } else {
@@ -302,7 +302,7 @@ void RunLogic() {
     }
   }
 
-  if (y_intersection_left_turning_state.IsInside()) {
+  if (y_intersection_left_turning_state.isInside()) {
     if (intended_direction == Direction::kForward ||
         intended_direction == Direction::kRight) {
       if (is_r_black) {
@@ -323,16 +323,16 @@ void RunLogic() {
       }
     } else if (intended_direction == Direction::kLeft) {
       if (is_r_black) {
-        got_r.Enter();
+        got_r.enter();
       }
-      if (got_r.IsInside() && !is_l_black && is_m_black) {
-        got_m.Enter();
+      if (got_r.isInside() && !is_l_black && is_m_black) {
+        got_m.enter();
       }
-      if (got_m.IsInside() && got_r.IsInside()) {
-        y_intersection_left_turning_state.Exit();
-        got_m.Exit();
-        got_r.Exit();
-        force_forward_state.Enter();
+      if (got_m.isInside() && got_r.isInside()) {
+        y_intersection_left_turning_state.exit();
+        got_m.exit();
+        got_r.exit();
+        force_forward_state.enter();
         debug_number = 15;
         return;
       } else {
@@ -344,7 +344,7 @@ void RunLogic() {
     }
   }
 
-  if (y_intersection_right_turning_state.IsInside()) {
+  if (y_intersection_right_turning_state.isInside()) {
     if (intended_direction == Direction::kForward ||
         intended_direction == Direction::kLeft) {
       if (is_r_black) {
@@ -365,16 +365,16 @@ void RunLogic() {
       }
     } else if (intended_direction == Direction::kRight) {
       if (is_l_black) {
-        got_l.Enter();
+        got_l.enter();
       }
-      if (got_l.IsInside() && !is_r_black && is_m_black) {
-        got_m.Enter();
+      if (got_l.isInside() && !is_r_black && is_m_black) {
+        got_m.enter();
       }
-      if (got_m.IsInside() && got_r.IsInside()) {
-        y_intersection_left_turning_state.Exit();
-        got_m.Exit();
-        got_l.Exit();
-        force_forward_state.Enter();
+      if (got_m.isInside() && got_r.isInside()) {
+        y_intersection_left_turning_state.exit();
+        got_m.exit();
+        got_l.exit();
+        force_forward_state.enter();
         debug_number = 29;
         return;
       } else {
@@ -387,19 +387,19 @@ void RunLogic() {
   }
 
   if (is_l_black && is_m_black && is_r_black) {
-    t_intersection_turning_state.Enter();
+    t_intersection_turning_state.enter();
     debug_number = 24;
     return;
   }
 
-  if (is_m_black && is_l_black && !t_intersection_turning_state.IsInside()) {
-    y_intersection_left_turning_state.Enter();
+  if (is_m_black && is_l_black && !t_intersection_turning_state.isInside()) {
+    y_intersection_left_turning_state.enter();
     debug_number = 17;
     return;
   }
 
-  if (is_m_black && is_r_black && !t_intersection_turning_state.IsInside()) {
-    y_intersection_right_turning_state.Enter();
+  if (is_m_black && is_r_black && !t_intersection_turning_state.isInside()) {
+    y_intersection_right_turning_state.enter();
     debug_number = 31;
     return;
   }

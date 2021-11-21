@@ -3,71 +3,71 @@
 
 #include <Arduino.h>
 
-#define SCREEN_WIDTH 128  // OLED display width, in pixels
-#define SCREEN_HEIGHT 32  // OLED display height, in pixels
+#define kScreenWidth 128  // OLED display width, in pixels
+#define kScreenHeight 32  // OLED display height, in pixels
 
-#define SPEED_FACTOR 1
-#define SPEED_DIV_FACTOR 1
+#define kSpeedFactor 1
+#define kSpeedDivFactor 1
 
-#define SAMPLE_SIZE 5
+#define kSampleSize 5
 
-#define RIGHT_SONIC_ECHO_PIN A10
-#define RIGHT_SONIC_TRIG_PIN A11
+#define kRIghtSonicEchoPin A10
+#define kRightSonicTrigPin A11
 
-#define LEFT_SONIC_ECHO_PIN A6
-#define LEFT_SONIC_TRIG_PIN A7
+#define kLeftSonicEchoPin A6
+#define kLeftSonicTrigPin A7
 
-#define SERIAL_BAUD_RATE 115200
+#define kSerialBaudRate 115200
 
-#define PWMA 12  // Motor A PWM
-#define DIRA1 34
-#define DIRA2 35  // Motor A Direction
-#define PWMB 8    // Motor B PWM
-#define DIRB1 37
-#define DIRB2 36  // Motor B Direction
-#define PWMC 9    // Motor C PWM
-#define DIRC1 43
-#define DIRC2 42  // Motor C Direction
-#define PWMD 5    // Motor D PWM
-#define DIRD1 A4  // 26
-#define DIRD2 A5  // 27  //Motor D Direction
+#define kPwmAPin 12  // Motor A PWM
+#define kDirA1Pin 34
+#define kDirA2Pin 35  // Motor A Direction
+#define kPwmBPin 8    // Motor B PWM
+#define kDirB1Pin 37
+#define kDirB2Pin 36  // Motor B Direction
+#define kPwmCPin 9    // Motor C PWM
+#define kDirC1Pin 43
+#define kDirC2Pin 42  // Motor C Direction
+#define kPwmDPin 5    // Motor D PWM
+#define kDirD1Pin A4  // 26
+#define kDirD2Pin A5  // 27  //Motor D Direction
 
-#define MOTORA_REVERSED false
-#define MOTORB_REVERSED true
-#define MOTORC_REVERSED false
-#define MOTORD_REVERSED true
+#define kMotorAReversed false
+#define kMotorBReversed true
+#define kMotorCReversed false
+#define kMotorDReversed true
 
-#define LINE_SENSOR_THRESHOLD 500
+#define kLineSensorThreshold 500
 
 // Middle front line sensor
-#define LINE_SENSOR_MF_ANALOG_PIN A9
+#define kLineSensorMFAnalogPin A9
 
 // Right front line sensor
-#define LINE_SENSOR_RF_ANALOG_PIN A2
+#define kLineSensorRFAnalogPin A2
 
 // Left front line sensor
-#define LINE_SENSOR_LF_ANALOG_PIN A0
+#define kLineSensorLFAnalogPin A0
 
-#define LINE_SENSOR_LF_THRESHOLD 350
-#define LINE_SENSOR_MF_THRESHOLD 350
-#define LINE_SENSOR_RF_THRESHOLD 350
+#define kLineSensorLFThreshold 350
+#define kLineSensorMFThreshold 350
+#define kLineSensorRFThreshold 350
 
 // Temperature sensor
-#define TEMPERATURE_SENSOR_PIN A8
+#define kTemperatureSensorPin A8
 
 // Buzzer
-#define BUZZER_PIN A12
+#define kBuzzerPin A12
 
 // RGB light module
-#define RGB_LIGHT_MODULE_RED_PIN A13
-#define RGB_LIGHT_MODULE_GREEN_PIN A14
-#define RGB_LIGHT_MODULE_BLUE_PIN A15
+#define kRgbLightModuleRedPin A13
+#define kRgbLightModuleGreenPin A14
+#define kRgbLightModuleBluePin A15
 
-#define SERIAL_USE_CLEAR_MAGIC true
-#define SERIAL_CLEAR_MAGIC_STRING "\033[2J\033[1;1H"
+#define kSerialUseClearMagic true
+#define kSerialClearMagicString "\033[2J\033[1;1H"
 
-#define FORWARD_SPEED 35
-#define ROTATION_SPEED 25
+#define kForwardSpeed 35
+#define kRotationSpeed 25
 
 enum class Direction {
     kLeft,

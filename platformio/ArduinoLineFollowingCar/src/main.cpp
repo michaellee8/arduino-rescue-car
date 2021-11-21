@@ -13,7 +13,7 @@
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
 #define OLED_RESET 28  // 4 // Reset pin # (or -1 if sharing Arduino reset pin)
-Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+Adafruit_SSD1306 display(kScreenWidth, kScreenHeight, &Wire, OLED_RESET);
 
 // Arduino has no double, double is float
 // float is slow anyway since it is emulated, Arduino has no FPU
@@ -50,19 +50,19 @@ SimpleState t_got_l, t_got_m, t_got_r;
 // are we running.
 int debug_number = 0;
 
-CachedMotor motor_a(DIRA1, DIRA2, PWMA, false);
-CachedMotor motor_b(DIRB1, DIRB2, PWMB, true);
-CachedMotor motor_c(DIRC1, DIRC2, PWMC, false);
-CachedMotor motor_d(DIRD1, DIRD2, PWMD, true);
+CachedMotor motor_a(kDirA1Pin, kDirA2Pin, kPwmAPin, kMotorAReversed);
+CachedMotor motor_b(kDirB1Pin, kDirB2Pin, kPwmBPin, kMotorBReversed);
+CachedMotor motor_c(kDirC1Pin, kDirC2Pin, kPwmCPin, kMotorCReversed);
+CachedMotor motor_d(kDirD1Pin, kDirD2Pin, kPwmDPin, kMotorDReversed);
 
 auto motor_lf = motor_a;
 auto motor_rf = motor_b;
 auto motor_lb = motor_c;
 auto motor_rb = motor_d;
 
-LineSensor line_sensor_lf(LINE_SENSOR_LF_ANALOG_PIN, LINE_SENSOR_LF_THRESHOLD);
-LineSensor line_sensor_mf(LINE_SENSOR_MF_ANALOG_PIN, LINE_SENSOR_MF_THRESHOLD);
-LineSensor line_sensor_rf(LINE_SENSOR_RF_ANALOG_PIN, LINE_SENSOR_RF_THRESHOLD);
+LineSensor line_sensor_lf(kLineSensorLFAnalogPin, kLineSensorLFThreshold);
+LineSensor line_sensor_mf(kLineSensorMFAnalogPin, kLineSensorMFThreshold);
+LineSensor line_sensor_rf(kLineSensorRFAnalogPin, kLineSensorRFThreshold);
 
 bool is_l_black;
 bool is_m_black;
@@ -78,49 +78,49 @@ void MeasureLineSensor() {
 
 void MeasureDistance() {
   // Measure distance using left and right sonar here.
-  // Measure the distance for SAMPLE_SIZE times, and then take the
+  // Measure the distance for kSampleSize times, and then take the
   // average of the middle 3 samples as the final value.
   // So that we can achieve best accuracy. No need to worry about
   // time consumed in measuring here since ultrasonic measuring is quick cheap.
 
   float duration_l;
   float duration_r;
-  unsigned long duration_l_s[SAMPLE_SIZE];
-  unsigned long duration_r_s[SAMPLE_SIZE];
+  unsigned long duration_l_s[kSampleSize];
+  unsigned long duration_r_s[kSampleSize];
 
   // The sensor is triggered by a HIGH pulse of 10 or more microseconds.
   // Give a short LOW pulse beforehand to ensure a clean HIGH pulse.
 
-  for (int i = 0; i < SAMPLE_SIZE; i++) {
-    digitalWrite(LEFT_SONIC_TRIG_PIN, LOW);
+  for (int i = 0; i < kSampleSize; i++) {
+    digitalWrite(kLeftSonicTrigPin, LOW);
     delayMicroseconds(5);
-    digitalWrite(LEFT_SONIC_TRIG_PIN, HIGH);
+    digitalWrite(kLeftSonicTrigPin, HIGH);
     delayMicroseconds(10);
-    digitalWrite(LEFT_SONIC_TRIG_PIN, LOW);
-    duration_l_s[i] = pulseIn(LEFT_SONIC_ECHO_PIN, HIGH);
+    digitalWrite(kLeftSonicTrigPin, LOW);
+    duration_l_s[i] = pulseIn(kLeftSonicEchoPin, HIGH);
 
     // Take some rest before we measure the right sensor.
     delayMicroseconds(20);
 
-    digitalWrite(RIGHT_SONIC_TRIG_PIN, LOW);
+    digitalWrite(kRightSonicTrigPin, LOW);
     delayMicroseconds(5);
-    digitalWrite(RIGHT_SONIC_TRIG_PIN, HIGH);
+    digitalWrite(kRightSonicTrigPin, HIGH);
     delayMicroseconds(10);
-    digitalWrite(RIGHT_SONIC_TRIG_PIN, LOW);
-    duration_r_s[i] = pulseIn(RIGHT_SONIC_ECHO_PIN, HIGH);
+    digitalWrite(kRightSonicTrigPin, LOW);
+    duration_r_s[i] = pulseIn(kRIghtSonicEchoPin, HIGH);
   }
 
-  sortArray(duration_l_s, SAMPLE_SIZE);
-  sortArray(duration_r_s, SAMPLE_SIZE);
+  sortArray(duration_l_s, kSampleSize);
+  sortArray(duration_r_s, kSampleSize);
 
-  duration_l = duration_l_s[SAMPLE_SIZE / 2 - 1] +
-               duration_l_s[SAMPLE_SIZE / 2] +
-               duration_l_s[SAMPLE_SIZE / 2 + 1];
+  duration_l = duration_l_s[kSampleSize / 2 - 1] +
+               duration_l_s[kSampleSize / 2] +
+               duration_l_s[kSampleSize / 2 + 1];
   duration_l /= 3.0;
 
-  duration_r = duration_r_s[SAMPLE_SIZE / 2 - 1] +
-               duration_r_s[SAMPLE_SIZE / 2] +
-               duration_r_s[SAMPLE_SIZE / 2 + 1];
+  duration_r = duration_r_s[kSampleSize / 2 - 1] +
+               duration_r_s[kSampleSize / 2] +
+               duration_r_s[kSampleSize / 2 + 1];
   duration_r /= 3.0;
 
   distance_in_cm_L = duration_l / 2.0 / 29.1;
@@ -221,7 +221,7 @@ void RunLogic() {
 
   if (force_forward_state.isInside() ||
       t_intersection_force_forward_state.isInside()) {
-    MoveForward(FORWARD_SPEED);
+    MoveForward(kForwardSpeed);
     debug_number = 11;
     return;
   }
@@ -230,7 +230,7 @@ void RunLogic() {
     if (is_l_black || is_r_black) {
       // We are not clear from the intersection yet.
       debug_number = 25;
-      MoveForward(FORWARD_SPEED);
+      MoveForward(kForwardSpeed);
       return;
     }
     if (is_m_black) {
@@ -272,8 +272,8 @@ void RunLogic() {
         debug_number = 29;
         return;
       } else {
-        RunMotor(-ROTATION_SPEED, -ROTATION_SPEED, ROTATION_SPEED,
-                 ROTATION_SPEED);
+        RunMotor(-kRotationSpeed, -kRotationSpeed, kRotationSpeed,
+                 kRotationSpeed);
         debug_number = 30;
         return;
       }
@@ -294,8 +294,8 @@ void RunLogic() {
         debug_number = 31;
         return;
       } else {
-        RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED,
-                 -ROTATION_SPEED);
+        RunMotor(kRotationSpeed, kRotationSpeed, -kRotationSpeed,
+                 -kRotationSpeed);
         debug_number = 32;
         return;
       }
@@ -306,17 +306,17 @@ void RunLogic() {
     if (intended_direction == Direction::kForward ||
         intended_direction == Direction::kRight) {
       if (is_r_black) {
-        RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED,
-                 -ROTATION_SPEED);
+        RunMotor(kRotationSpeed, kRotationSpeed, -kRotationSpeed,
+                 -kRotationSpeed);
         debug_number = 12;
         return;
       } else {
         if (is_m_black) {
-          MoveForward(FORWARD_SPEED);
+          MoveForward(kForwardSpeed);
           debug_number = 13;
           return;
         } else {
-          MoveForward(FORWARD_SPEED);
+          MoveForward(kForwardSpeed);
           debug_number = 14;
           return;
         }
@@ -336,8 +336,8 @@ void RunLogic() {
         debug_number = 15;
         return;
       } else {
-        RunMotor(-ROTATION_SPEED, -ROTATION_SPEED, ROTATION_SPEED,
-                 ROTATION_SPEED);
+        RunMotor(-kRotationSpeed, -kRotationSpeed, kRotationSpeed,
+                 kRotationSpeed);
         debug_number = 16;
         return;
       }
@@ -348,17 +348,17 @@ void RunLogic() {
     if (intended_direction == Direction::kForward ||
         intended_direction == Direction::kLeft) {
       if (is_r_black) {
-        RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED,
-                 -ROTATION_SPEED);
+        RunMotor(kRotationSpeed, kRotationSpeed, -kRotationSpeed,
+                 -kRotationSpeed);
         debug_number = 12;
         return;
       } else {
         if (is_m_black) {
-          MoveForward(FORWARD_SPEED);
+          MoveForward(kForwardSpeed);
           debug_number = 13;
           return;
         } else {
-          MoveForward(FORWARD_SPEED);
+          MoveForward(kForwardSpeed);
           debug_number = 14;
           return;
         }
@@ -378,8 +378,8 @@ void RunLogic() {
         debug_number = 29;
         return;
       } else {
-        RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED,
-                 -ROTATION_SPEED);
+        RunMotor(kRotationSpeed, kRotationSpeed, -kRotationSpeed,
+                 -kRotationSpeed);
         debug_number = 30;
         return;
       }
@@ -406,21 +406,21 @@ void RunLogic() {
 
   if (is_l_black) {
     last_seen_side = Side::kLeft;
-    RunMotor(-ROTATION_SPEED, -ROTATION_SPEED, ROTATION_SPEED, ROTATION_SPEED);
+    RunMotor(-kRotationSpeed, -kRotationSpeed, kRotationSpeed, kRotationSpeed);
     debug_number = 18;
     return;
   }
 
   if (is_r_black) {
     last_seen_side = Side::kRight;
-    RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED, -ROTATION_SPEED);
+    RunMotor(kRotationSpeed, kRotationSpeed, -kRotationSpeed, -kRotationSpeed);
     debug_number = 19;
     return;
   }
 
   if (is_m_black) {
     last_seen_side = Side::kMiddle;
-    MoveForward(FORWARD_SPEED);
+    MoveForward(kForwardSpeed);
     debug_number = 20;
     return;
   }
@@ -428,26 +428,26 @@ void RunLogic() {
   // All sensors had no input.
   switch (last_seen_side) {
     case Side::kLeft:
-      RunMotor(-ROTATION_SPEED, -ROTATION_SPEED, ROTATION_SPEED,
-               ROTATION_SPEED);
+      RunMotor(-kRotationSpeed, -kRotationSpeed, kRotationSpeed,
+               kRotationSpeed);
       debug_number = 21;
       break;
 
     case Side::kRight:
-      RunMotor(ROTATION_SPEED, ROTATION_SPEED, -ROTATION_SPEED,
-               -ROTATION_SPEED);
+      RunMotor(kRotationSpeed, kRotationSpeed, -kRotationSpeed,
+               -kRotationSpeed);
       debug_number = 22;
       break;
 
     case Side::kMiddle:
-      MoveForward(FORWARD_SPEED);
+      MoveForward(kForwardSpeed);
       debug_number = 23;
       break;
   }
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(kSerialBaudRate);
 
   // OLED Setup//////////////////////////////////
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {  // Address 0x3C for 128x32
@@ -460,15 +460,15 @@ void setup() {
   pinMode(A0, INPUT);
 
   // Setup ultrasonic sensor
-  pinMode(LEFT_SONIC_ECHO_PIN, INPUT);
-  pinMode(LEFT_SONIC_TRIG_PIN, OUTPUT);
-  pinMode(RIGHT_SONIC_ECHO_PIN, INPUT);
-  pinMode(RIGHT_SONIC_TRIG_PIN, OUTPUT);
+  pinMode(kLeftSonicEchoPin, INPUT);
+  pinMode(kLeftSonicTrigPin, OUTPUT);
+  pinMode(kRIghtSonicEchoPin, INPUT);
+  pinMode(kRightSonicTrigPin, OUTPUT);
 
   // Setup line sensor
-  pinMode(LINE_SENSOR_LF_ANALOG_PIN, INPUT);
-  pinMode(LINE_SENSOR_MF_ANALOG_PIN, INPUT);
-  pinMode(LINE_SENSOR_RF_ANALOG_PIN, INPUT);
+  pinMode(kLineSensorLFAnalogPin, INPUT);
+  pinMode(kLineSensorMFAnalogPin, INPUT);
+  pinMode(kLineSensorRFAnalogPin, INPUT);
 
   // Wait for 5 seconds before starting
   display.clearDisplay();

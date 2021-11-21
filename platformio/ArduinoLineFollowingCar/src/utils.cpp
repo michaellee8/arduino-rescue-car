@@ -1,7 +1,7 @@
 #include "utils.h"
 #include "line_follow_robot_consts.h"
 
-const char* convertDirectionToString(Direction v){
+const char* ConvertDirectionToString(Direction v){
     switch (v)
     {
     case Direction::kLeft:
@@ -20,7 +20,7 @@ const char* convertDirectionToString(Direction v){
     return "";
 }
 
-const char* convertSideToString(Side v){
+const char* ConvertSideToString(Side v){
     switch (v)
     {
     case Side::kLeft:

@@ -157,7 +157,7 @@ void LogToDisplay() {
   display.print(",C");
   display.print(debug_number);
   display.print(",lss");
-  display.print(convertSideToString(last_seen_side));
+  display.print(ConvertSideToString(last_seen_side));
   display.display();
 }
 
@@ -186,7 +186,7 @@ void LogToSerial() {
   Serial.print(",C");
   Serial.print(debug_number);
   Serial.print(",lss");
-  Serial.print(convertSideToString(last_seen_side));
+  Serial.print(ConvertSideToString(last_seen_side));
   Serial.println();
 }
 

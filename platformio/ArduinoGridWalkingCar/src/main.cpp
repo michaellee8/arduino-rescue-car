@@ -26,17 +26,27 @@ TimedState y_intersection_left_turning_state(3000);
 
 TimedState y_intersection_right_turning_state(3000);
 
-TimedState last_seen_left_state(200);
+TimedState last_seen_lf_state(200);
 
-TimedState last_seen_middle_state(200);
+TimedState last_seen_mf_state(200);
 
-TimedState last_seen_right_state(200);
+TimedState last_seen_rf_state(200);
+
+TimedState last_seen_lm_state(200);
+
+TimedState last_seen_mm_state(200);
+
+TimedState last_seen_rm_state(200);
 
 TimedState nothing_seen_continue_orignial_direciton_state(1000);
 
 TimedState nothing_seen_back_state(2000);
 
 TimedState t_intersection_turning_state(3000);
+
+TimedState left_right_sensor_conflict_stage_1_force_backward(1000);
+
+TimedState left_right_sensor_conflict_stage_2_force_rotate_right(1300);
 
 RepeatingTimedState logging_mask_state(1, 99, false);
 
@@ -64,16 +74,52 @@ LineSensor line_sensor_lf(kLineSensorLFAnalogPin, kLineSensorLFThreshold);
 LineSensor line_sensor_mf(kLineSensorMFAnalogPin, kLineSensorMFThreshold);
 LineSensor line_sensor_rf(kLineSensorRFAnalogPin, kLineSensorRFThreshold);
 
-bool is_l_black;
-bool is_m_black;
-bool is_r_black;
+LineSensor line_sensor_lm(kLineSensorLMAnalogPin, kLineSensorLMThreshold);
+LineSensor line_sensor_mm(kLineSensorMMAnalogPin, kLineSensorMMThreshold);
+LineSensor line_sensor_rm(kLineSensorRMAnalogPin, kLineSensorRMThreshold);
+
+bool is_lf_black;
+bool is_mf_black;
+bool is_rf_black;
+
+bool is_lm_black;
+bool is_mm_black;
+bool is_rm_black;
 
 Side last_seen_side = Side::kMiddle;
 
 void MeasureLineSensor() {
-  is_l_black = line_sensor_lf.IsOnLine();
-  is_m_black = line_sensor_mf.IsOnLine();
-  is_r_black = line_sensor_rf.IsOnLine();
+  is_lf_black = line_sensor_lf.IsOnLine();
+  is_mf_black = line_sensor_mf.IsOnLine();
+  is_rf_black = line_sensor_rf.IsOnLine();
+
+  is_lm_black = line_sensor_lm.IsOnLine();
+  is_mm_black = line_sensor_mm.IsOnLine();
+  is_rm_black = line_sensor_rm.IsOnLine();
+
+  if (is_lf_black) {
+    last_seen_lf_state.forceEnter();
+  }
+
+  if (is_mf_black) {
+    last_seen_mf_state.forceEnter();
+  }
+
+  if (is_rf_black) {
+    last_seen_rf_state.forceEnter();
+  }
+
+  if (is_lm_black) {
+    last_seen_lm_state.forceEnter();
+  }
+
+  if (is_mm_black) {
+    last_seen_mm_state.forceEnter();
+  }
+
+  if (is_rm_black) {
+    last_seen_rm_state.forceEnter();
+  }
 }
 
 void MeasureDistance() {
@@ -137,15 +183,15 @@ void LogToDisplay() {
   display.cp437(true);
   display.setCursor(0, 0);
   display.print("L");
-  display.print(is_l_black);
+  display.print(is_lf_black);
   display.print(",Lv");
   display.print(line_sensor_lf.PrevAnalogValue());
   display.print(",M");
-  display.print(is_m_black);
+  display.print(is_mf_black);
   display.print(",Mv");
   display.print(line_sensor_mf.PrevAnalogValue());
   display.print(",R");
-  display.print(is_r_black);
+  display.print(is_rf_black);
   display.print(",Rv");
   display.print(line_sensor_rf.PrevAnalogValue());
   display.print(",rb");
@@ -168,15 +214,15 @@ void LogToSerial() {
   int motor_speeds[4];
   motors.GetMotorsSpeed(motor_speeds);
   Serial.print("L");
-  Serial.print(is_l_black);
+  Serial.print(is_lf_black);
   Serial.print(",Lv");
   Serial.print(line_sensor_lf.PrevAnalogValue());
   Serial.print(",M");
-  Serial.print(is_m_black);
+  Serial.print(is_mf_black);
   Serial.print(",Mv");
   Serial.print(line_sensor_mf.PrevAnalogValue());
   Serial.print(",R");
-  Serial.print(is_r_black);
+  Serial.print(is_rf_black);
   Serial.print(",Rv");
   Serial.print(line_sensor_rf.PrevAnalogValue());
   Serial.print(",rb");
@@ -213,15 +259,27 @@ void RunLogic() {
     return;
   }
 
+  if (left_right_sensor_conflict_stage_1_force_backward.isInside()){
+    motors.Forward(-kForwardSpeed);
+    debug_number = 100;
+    return;
+  }
+
+  if (left_right_sensor_conflict_stage_2_force_rotate_right.isInside()){
+    motors.Rotate(kRotationSpeed);
+    debug_number = 110;
+    return;
+  }
+
   if (y_intersection_left_turning_state.isInside()) {
     if (intended_direction == Direction::kForward ||
         intended_direction == Direction::kRight) {
-      if (is_r_black) {
+      if (is_rf_black) {
         motors.Rotate(kRotationSpeed);
         debug_number = 12;
         return;
       } else {
-        if (is_m_black) {
+        if (is_mf_black) {
           motors.Forward(kForwardSpeed);
           debug_number = 13;
           return;
@@ -232,10 +290,10 @@ void RunLogic() {
         }
       }
     } else if (intended_direction == Direction::kLeft) {
-      if (is_r_black) {
+      if (is_rf_black) {
         got_r.enter();
       }
-      if (got_r.isInside() && !is_l_black && is_m_black) {
+      if (got_r.isInside() && !is_lf_black && is_mf_black) {
         got_m.enter();
       }
       if (got_m.isInside() && got_r.isInside()) {
@@ -256,12 +314,12 @@ void RunLogic() {
   if (y_intersection_right_turning_state.isInside()) {
     if (intended_direction == Direction::kForward ||
         intended_direction == Direction::kLeft) {
-      if (is_r_black) {
+      if (is_rf_black) {
         motors.Rotate(kRotationSpeed);
         debug_number = 12;
         return;
       } else {
-        if (is_m_black) {
+        if (is_mf_black) {
           motors.Forward(kForwardSpeed);
           debug_number = 13;
           return;
@@ -272,10 +330,10 @@ void RunLogic() {
         }
       }
     } else if (intended_direction == Direction::kRight) {
-      if (is_l_black) {
+      if (is_lf_black) {
         got_l.enter();
       }
-      if (got_l.isInside() && !is_r_black && is_m_black) {
+      if (got_l.isInside() && !is_rf_black && is_mf_black) {
         got_m.enter();
       }
       if (got_m.isInside() && got_r.isInside()) {
@@ -293,47 +351,51 @@ void RunLogic() {
     }
   }
 
-  if ((is_l_black && is_m_black && is_r_black) ||
-      (last_seen_left_state.isInside() && last_seen_middle_state.isInside() &&
-       last_seen_right_state.isInside())) {
+  if ((is_lf_black && is_mf_black && is_rf_black) ||
+      (last_seen_lf_state.isInside() && last_seen_mf_state.isInside() &&
+       last_seen_rf_state.isInside())) {
     t_intersection_turning_state.enter();
     debug_number = 24;
     return;
   }
 
-  if ((is_m_black && is_l_black) ||
-      (last_seen_left_state.isInside() && last_seen_middle_state.isInside())) {
+  if ((is_mf_black && is_lf_black) ||
+      (last_seen_lf_state.isInside() && last_seen_mf_state.isInside())) {
     y_intersection_left_turning_state.enter();
     debug_number = 17;
     return;
   }
 
-  if ((is_m_black && is_r_black) ||
-      (last_seen_middle_state.isInside() && last_seen_right_state.isInside())) {
+  if ((is_mf_black && is_rf_black) ||
+      (last_seen_mf_state.isInside() && last_seen_rf_state.isInside())) {
     y_intersection_right_turning_state.enter();
     debug_number = 31;
     return;
   }
 
-  if (is_l_black) {
+  if ((is_lf_black && is_rf_black) || (last_seen_lf_state.isInside() && last_seen_rf_state.isInside())){
+    left_right_sensor_conflict_stage_1_force_backward.enter();
+    left_right_sensor_conflict_stage_2_force_rotate_right.enter();
+    debug_number = 101;
+    return;
+  }
+
+  if (is_lf_black) {
     last_seen_side = Side::kLeft;
-    last_seen_left_state.forceEnter();
     motors.Rotate(-kRotationSpeed);
     debug_number = 18;
     return;
   }
 
-  if (is_r_black) {
+  if (is_rf_black) {
     last_seen_side = Side::kRight;
-    last_seen_right_state.forceEnter();
     motors.Rotate(kRotationSpeed);
     debug_number = 19;
     return;
   }
 
-  if (is_m_black) {
+  if (is_mf_black) {
     last_seen_side = Side::kMiddle;
-    last_seen_middle_state.forceEnter();
     motors.Forward(kForwardSpeed);
     debug_number = 20;
     return;

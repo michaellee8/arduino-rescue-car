@@ -18,7 +18,7 @@ Adafruit_SSD1306 display(kScreenWidth, kScreenHeight, &Wire, OLED_RESET);
 float distance_in_cm_L;
 float distance_in_cm_R;
 
-TimedState y_turning_force_forward_state(500);
+TimedState y_turning_force_forward_state(100);
 
 TimedState t_intersection_force_forward_state(1000);
 
@@ -47,6 +47,9 @@ TimedState t_intersection_turning_state(3000);
 TimedState left_right_sensor_conflict_stage_1_force_backward(1000);
 
 TimedState left_right_sensor_conflict_stage_2_force_rotate_right(1300);
+
+
+TimedState left_right_sensor_conflict_stage_1_force_rotate_left(300);
 
 RepeatingTimedState logging_mask_state(1, 99, false);
 
@@ -271,6 +274,12 @@ void RunLogic() {
     return;
   }
 
+  if (left_right_sensor_conflict_stage_1_force_rotate_left.isInside()){
+    motors.Rotate(-kRotationSpeed);
+    debug_number = 111;
+    return;
+  }
+
   if (y_intersection_left_turning_state.isInside()) {
     if (intended_direction == Direction::kForward ||
         intended_direction == Direction::kRight) {
@@ -366,16 +375,15 @@ void RunLogic() {
     return;
   }
 
-  if ((is_mf_black && is_rf_black) ||
-      (last_seen_mf_state.isInside() && last_seen_rf_state.isInside())) {
-    y_intersection_right_turning_state.enter();
-    debug_number = 31;
-    return;
-  }
+  // if ((is_mf_black && is_rf_black) ||
+  //     (last_seen_mf_state.isInside() && last_seen_rf_state.isInside())) {
+  //   y_intersection_right_turning_state.enter();
+  //   debug_number = 31;
+  //   return;
+  // }
 
   if ((is_lf_black && is_rf_black) || (last_seen_lf_state.isInside() && last_seen_rf_state.isInside())){
-    left_right_sensor_conflict_stage_1_force_backward.enter();
-    left_right_sensor_conflict_stage_2_force_rotate_right.enter();
+    left_right_sensor_conflict_stage_1_force_rotate_left.enter();
     debug_number = 101;
     return;
   }

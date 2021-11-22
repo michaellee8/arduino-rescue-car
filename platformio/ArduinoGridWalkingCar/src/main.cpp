@@ -32,6 +32,10 @@ TimedState last_seen_mf_state(200);
 
 TimedState last_seen_rf_state(200);
 
+TimedState last_seen_conflict_lf_state(400);
+
+TimedState last_seen_conflict_rf_state(400);
+
 TimedState last_seen_lm_state(200);
 
 TimedState last_seen_mm_state(200);
@@ -44,12 +48,13 @@ TimedState nothing_seen_back_state(2000);
 
 TimedState t_intersection_turning_state(3000);
 
-TimedState left_right_sensor_conflict_stage_1_force_backward(1000);
+// TimedState left_right_sensor_conflict_stage_1_force_backward(1000);
 
-TimedState left_right_sensor_conflict_stage_2_force_rotate_right(1300);
+// TimedState left_right_sensor_conflict_stage_2_force_rotate_right(1300);
 
+TimedState left_right_sensor_conflict_stage_1_force_rotate_left(400);
 
-TimedState left_right_sensor_conflict_stage_1_force_rotate_left(300);
+TimedState left_right_sensor_conflict_stage_2_force_backward(0); // disabled
 
 RepeatingTimedState logging_mask_state(1, 99, false);
 
@@ -102,6 +107,7 @@ void MeasureLineSensor() {
 
   if (is_lf_black) {
     last_seen_lf_state.forceEnter();
+    last_seen_conflict_lf_state.forceEnter();
   }
 
   if (is_mf_black) {
@@ -110,6 +116,7 @@ void MeasureLineSensor() {
 
   if (is_rf_black) {
     last_seen_rf_state.forceEnter();
+    last_seen_conflict_rf_state.forceEnter();
   }
 
   if (is_lm_black) {
@@ -262,21 +269,27 @@ void RunLogic() {
     return;
   }
 
-  if (left_right_sensor_conflict_stage_1_force_backward.isInside()){
-    motors.Forward(-kForwardSpeed);
-    debug_number = 100;
-    return;
-  }
+  // if (left_right_sensor_conflict_stage_1_force_backward.isInside()){
+  //   motors.Forward(-kForwardSpeed);
+  //   debug_number = 100;
+  //   return;
+  // }
 
-  if (left_right_sensor_conflict_stage_2_force_rotate_right.isInside()){
-    motors.Rotate(kRotationSpeed);
-    debug_number = 110;
-    return;
-  }
+  // if (left_right_sensor_conflict_stage_2_force_rotate_right.isInside()){
+  //   motors.Rotate(kRotationSpeed);
+  //   debug_number = 110;
+  //   return;
+  // }
 
-  if (left_right_sensor_conflict_stage_1_force_rotate_left.isInside()){
+  if (left_right_sensor_conflict_stage_1_force_rotate_left.isInside()) {
     motors.Rotate(-kRotationSpeed);
     debug_number = 111;
+    return;
+  }
+
+  if (left_right_sensor_conflict_stage_2_force_backward.isInside()) {
+    motors.Forward(-kForwardSpeed);
+    debug_number = 100;
     return;
   }
 
@@ -382,8 +395,12 @@ void RunLogic() {
   //   return;
   // }
 
-  if ((is_lf_black && is_rf_black) || (last_seen_lf_state.isInside() && last_seen_rf_state.isInside())){
+  if ((is_lf_black && is_rf_black) ||
+      (last_seen_lf_state.isInside() && last_seen_rf_state.isInside()) ||
+      (last_seen_conflict_rf_state.isInside() &&
+       last_seen_conflict_lf_state.isInside())) {
     left_right_sensor_conflict_stage_1_force_rotate_left.enter();
+    left_right_sensor_conflict_stage_2_force_backward.enter();
     debug_number = 101;
     return;
   }

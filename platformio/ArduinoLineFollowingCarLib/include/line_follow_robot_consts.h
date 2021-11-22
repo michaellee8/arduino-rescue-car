@@ -37,7 +37,7 @@ const auto kMotorBReversed = true;
 const auto kMotorCReversed = false;
 const auto kMotorDReversed = true;
 
-const auto kLineSensorThreshold = 500;
+const auto kLineSensorThreshold = 350;
 
 // Middle front line sensor
 const auto kLineSensorMFAnalogPin = A9;

@@ -80,7 +80,7 @@ const auto kSerialUseClearMagic = true;
 const char kSerialClearMagicString[] = {27, 91, 50, 74, 27, 91, 49, 59, 49, 72};
 
 const auto kForwardSpeed = 35;
-const auto kRotationSpeed = 25;
+const auto kRotationSpeed = 35;
 
 enum class Direction { kLeft, kForward, kRight };
 

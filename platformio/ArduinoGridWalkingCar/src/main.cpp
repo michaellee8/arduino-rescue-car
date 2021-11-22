@@ -64,6 +64,10 @@ TimedState t_intersection_cleared_state(3000);
 
 TimedState t_intersection_got_center_state(3000);
 
+TimedState t_intersection_backward_calibration_state(3000);
+
+TimedState t_intersection_backward_calibration_force_backward_state(200);
+
 SimpleState t_got_lf, t_got_mf, t_got_rf;
 
 // A number variable used for debugging that will be printed on log.
@@ -264,6 +268,7 @@ void LogDebugNumberSeldomly() {
 
 void ExitTIntersectionCleanUp() {
   t_intersection_cleared_state.exit();
+  t_intersection_backward_calibration_state.exit();
   t_intersection_got_center_state.exit();
   t_intersection_turning_state.exit();
   t_got_lf.exit();
@@ -312,13 +317,33 @@ void RunLogic() {
     if (last_seen_lm_state.isInside() && last_seen_mm_state.isInside() &&
         last_seen_rm_state.isInside()) {
       // Got middle sensors detected.
-      t_intersection_got_center_state.enter();
+      t_intersection_backward_calibration_state.enter();
+      t_intersection_backward_calibration_force_backward_state.enter();
+      // Hacky solution to reset last_seen_state
+      // TODO(michaellee8): Use specialized state to do the calibraton instead.
+      last_seen_lm_state.exit();
+      last_seen_mm_state.exit();
+      last_seen_rm_state.exit();
       t_intersection_cleared_state.exit();
       debug_number = 202;
       return;
     } else {
       motors.Forward(kForwardSpeed);
       debug_number = 212;
+      return;
+    }
+  }
+
+  if (t_intersection_backward_calibration_state.isInside()) {
+    if (last_seen_lm_state.isInside() && last_seen_mm_state.isInside() &&
+        last_seen_rm_state.isInside() && !t_intersection_backward_calibration_force_backward_state.isInside()) {
+      t_intersection_got_center_state.enter();
+      t_intersection_backward_calibration_state.exit();
+      debug_number = 226;
+      return;
+    } else {
+      motors.Forward(-kForwardSpeed);
+      debug_number = 227;
       return;
     }
   }

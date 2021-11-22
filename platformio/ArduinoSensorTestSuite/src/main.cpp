@@ -38,6 +38,9 @@ void run_logic() {
   int lineSensorLFAnalogValue = analogRead(LINE_SENSOR_LF_ANALOG_PIN);
   int lineSensorMFAnalogValue = analogRead(LINE_SENSOR_MF_ANALOG_PIN);
   int lineSensorRFAnalogValue = analogRead(LINE_SENSOR_RF_ANALOG_PIN);
+  int lineSensorLMAnalogValue = analogRead(LINE_SENSOR_LM_ANALOG_PIN);
+  int lineSensorMMAnalogValue = analogRead(LINE_SENSOR_MM_ANALOG_PIN);
+  int lineSensorRMAnalogValue = analogRead(LINE_SENSOR_RM_ANALOG_PIN);
 
   int temperatureSensorAnalogValue = analogRead(TEMPERATURE_SENSOR_PIN);
 
@@ -65,6 +68,18 @@ void run_logic() {
   display.print(lineSensorRFAnalogValue);
   display.print(", ");
 
+  display.print("LSLMA:");
+  display.print(lineSensorLMAnalogValue);
+  display.print(", ");
+
+  display.print("LSMMA:");
+  display.print(lineSensorMMAnalogValue);
+  display.print(", ");
+
+  display.print("LSRMA:");
+  display.print(lineSensorRMAnalogValue);
+  display.print(", ");
+
   display.print("TSAV:");
   display.print(temperatureSensorAnalogValue);
   display.print(", ");
@@ -88,9 +103,6 @@ void run_logic() {
   display.display();
 
   // tone(BUZZER_PIN, buzzerOutput);
-  analogWrite(RGB_LIGHT_MODULE_RED_PIN, rgbRedOutput);
-  analogWrite(RGB_LIGHT_MODULE_GREEN_PIN, rgbGreenOutput);
-  analogWrite(RGB_LIGHT_MODULE_BLUE_PIN, rgbBlueOutput);
 
   if (SERIAL_USE_CLEAR_MAGIC) {
     Serial.print(SERIAL_CLEAR_MAGIC_STRING);
@@ -108,6 +120,19 @@ void run_logic() {
 
   Serial.print("LSRFA:");
   Serial.print(lineSensorRFAnalogValue);
+  Serial.print(", ");
+
+
+  Serial.print("LSLMA:");
+  Serial.print(lineSensorLMAnalogValue);
+  Serial.print(", ");
+
+  Serial.print("LSMMA:");
+  Serial.print(lineSensorMMAnalogValue);
+  Serial.print(", ");
+
+  Serial.print("LSRMA:");
+  Serial.print(lineSensorRMAnalogValue);
   Serial.print(", ");
 
   Serial.print("TSAV:");
@@ -152,13 +177,15 @@ void setup() {
   pinMode(LINE_SENSOR_MF_ANALOG_PIN, INPUT);
   pinMode(LINE_SENSOR_RF_ANALOG_PIN, INPUT);
 
+
+  pinMode(LINE_SENSOR_LM_ANALOG_PIN, INPUT);
+  pinMode(LINE_SENSOR_MM_ANALOG_PIN, INPUT);
+  pinMode(LINE_SENSOR_RM_ANALOG_PIN, INPUT);
+
   pinMode(TEMPERATURE_SENSOR_PIN, INPUT);
 
   // pinMode(BUZZER_PIN, OUTPUT);
 
-  pinMode(RGB_LIGHT_MODULE_BLUE_PIN, OUTPUT);
-  pinMode(RGB_LIGHT_MODULE_GREEN_PIN, OUTPUT);
-  pinMode(RGB_LIGHT_MODULE_RED_PIN, OUTPUT);
 
   // Wait for 5 seconds before starting
   display.clearDisplay();

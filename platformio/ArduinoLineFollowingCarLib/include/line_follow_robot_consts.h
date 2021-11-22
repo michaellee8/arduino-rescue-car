@@ -48,9 +48,22 @@ const auto kLineSensorRFAnalogPin = A2;
 // Left front line sensor
 const auto kLineSensorLFAnalogPin = A0;
 
+// Middle middle line sensor
+const auto kLineSensorMMAnalogPin = A13;
+
+// Right middle line sensor
+const auto kLineSensorRMAnalogPin = A15;
+
+// Left middle line sensor
+const auto kLineSensorLMAnalogPin = A14;
+
 const auto kLineSensorLFThreshold = 350;
 const auto kLineSensorMFThreshold = 350;
 const auto kLineSensorRFThreshold = 350;
+
+const auto kLineSensorLMThreshold = 350;
+const auto kLineSensorMMThreshold = 350;
+const auto kLineSensorRMThreshold = 350;
 
 // Temperature sensor
 const auto kTemperatureSensorPin = A8;

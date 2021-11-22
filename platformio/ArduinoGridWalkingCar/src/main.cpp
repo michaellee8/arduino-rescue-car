@@ -54,15 +54,17 @@ TimedState t_intersection_turning_state(3000);
 
 TimedState left_right_sensor_conflict_stage_1_force_rotate_left(400);
 
-TimedState left_right_sensor_conflict_stage_2_force_backward(0); // disabled
+TimedState left_right_sensor_conflict_stage_2_force_backward(0);  // disabled
 
 RepeatingTimedState logging_mask_state(1, 99, false);
 
 SimpleState got_l, got_m, got_r;
 
-SimpleState t_intersection_cleared;
+TimedState t_intersection_cleared_state(3000);
 
-SimpleState t_got_l, t_got_m, t_got_r;
+TimedState t_intersection_got_center_state(3000);
+
+SimpleState t_got_lf, t_got_mf, t_got_rf;
 
 // A number variable used for debugging that will be printed on log.
 // Here we use it to log application state;
@@ -260,6 +262,15 @@ void LogDebugNumberSeldomly() {
   }
 }
 
+void ExitTIntersectionCleanUp() {
+  t_intersection_cleared_state.exit();
+  t_intersection_got_center_state.exit();
+  t_intersection_turning_state.exit();
+  t_got_lf.exit();
+  t_got_mf.exit();
+  t_got_rf.exit();
+}
+
 void RunLogic() {
   const Direction intended_direction = Direction::kLeft;
 
@@ -268,18 +279,6 @@ void RunLogic() {
     debug_number = 11;
     return;
   }
-
-  // if (left_right_sensor_conflict_stage_1_force_backward.isInside()){
-  //   motors.Forward(-kForwardSpeed);
-  //   debug_number = 100;
-  //   return;
-  // }
-
-  // if (left_right_sensor_conflict_stage_2_force_rotate_right.isInside()){
-  //   motors.Rotate(kRotationSpeed);
-  //   debug_number = 110;
-  //   return;
-  // }
 
   if (left_right_sensor_conflict_stage_1_force_rotate_left.isInside()) {
     motors.Rotate(-kRotationSpeed);
@@ -291,6 +290,72 @@ void RunLogic() {
     motors.Forward(-kForwardSpeed);
     debug_number = 100;
     return;
+  }
+
+  if (t_intersection_turning_state.isInside()) {
+    // Seen 3 senors at same time.
+
+    if (!last_seen_lf_state.isInside() && !last_seen_rf_state.isInside()) {
+      // Front side sensors cleared.
+      t_intersection_cleared_state.enter();
+      t_intersection_turning_state.exit();
+      debug_number = 201;
+      return;
+    } else {
+      motors.Forward(kForwardSpeed);
+      debug_number = 211;
+      return;
+    }
+  }
+
+  if (t_intersection_cleared_state.isInside()) {
+    if (last_seen_lm_state.isInside() && last_seen_mm_state.isInside() &&
+        last_seen_rm_state.isInside()) {
+      // Got middle sensors detected.
+      t_intersection_got_center_state.enter();
+      t_intersection_cleared_state.exit();
+      debug_number = 202;
+      return;
+    } else {
+      motors.Forward(kForwardSpeed);
+      debug_number = 212;
+      return;
+    }
+  }
+
+  if (t_intersection_got_center_state.isInside()) {
+    if (is_rf_black) {
+      t_got_rf.enter();
+    }
+    if (is_lf_black) {
+      t_got_lf.enter();
+    }
+    if (intended_direction == Direction::kForward) {
+      // t_intersection_force_forward_state.enter();
+      ExitTIntersectionCleanUp();
+      debug_number = 221;
+      return;
+    }
+    if (intended_direction == Direction::kLeft) {
+      if (is_mf_black && t_got_lf.isInside()) {
+        ExitTIntersectionCleanUp();
+        debug_number = 222;
+        return;
+      }
+      motors.Rotate(-kRotationSpeed);
+      debug_number = 223;
+      return;
+    }
+    if (intended_direction == Direction::kRight) {
+      if (is_mf_black && t_got_rf.isInside()) {
+        ExitTIntersectionCleanUp();
+        debug_number = 224;
+        return;
+      }
+      motors.Rotate(kRotationSpeed);
+      debug_number = 225;
+      return;
+    }
   }
 
   if (y_intersection_left_turning_state.isInside()) {

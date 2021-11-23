@@ -37,7 +37,7 @@ const auto kMotorBReversed = true;
 const auto kMotorCReversed = false;
 const auto kMotorDReversed = true;
 
-const auto kLineSensorThreshold = 500;
+const auto kLineSensorThreshold = 350;
 
 // Middle front line sensor
 const auto kLineSensorMFAnalogPin = A9;
@@ -48,9 +48,22 @@ const auto kLineSensorRFAnalogPin = A2;
 // Left front line sensor
 const auto kLineSensorLFAnalogPin = A0;
 
+// Middle middle line sensor
+const auto kLineSensorMMAnalogPin = A13;
+
+// Right middle line sensor
+const auto kLineSensorRMAnalogPin = A15;
+
+// Left middle line sensor
+const auto kLineSensorLMAnalogPin = A14;
+
 const auto kLineSensorLFThreshold = 350;
 const auto kLineSensorMFThreshold = 350;
 const auto kLineSensorRFThreshold = 350;
+
+const auto kLineSensorLMThreshold = 350;
+const auto kLineSensorMMThreshold = 350;
+const auto kLineSensorRMThreshold = 350;
 
 // Temperature sensor
 const auto kTemperatureSensorPin = A8;
@@ -67,7 +80,7 @@ const auto kSerialUseClearMagic = true;
 const char kSerialClearMagicString[] = {27, 91, 50, 74, 27, 91, 49, 59, 49, 72};
 
 const auto kForwardSpeed = 35;
-const auto kRotationSpeed = 25;
+const auto kRotationSpeed = 35;
 
 enum class Direction { kLeft, kForward, kRight };
 

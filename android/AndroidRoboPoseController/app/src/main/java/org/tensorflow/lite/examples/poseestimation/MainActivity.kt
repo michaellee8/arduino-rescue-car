@@ -24,6 +24,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Process
+import android.view.MotionEvent
 import android.view.SurfaceView
 import android.view.View
 import android.view.WindowManager
@@ -38,8 +39,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.tensorflow.lite.examples.poseestimation.camera.CameraSource
 import org.tensorflow.lite.examples.poseestimation.data.Device
-import org.tensorflow.lite.examples.poseestimation.data.Mode
+import org.tensorflow.lite.examples.poseestimation.data.CommandMode
 import org.tensorflow.lite.examples.poseestimation.ml.*
+import com.harrysoft.androidbluetoothserial.BluetoothManager
+import com.harrysoft.androidbluetoothserial.BluetoothSerialDevice
+import com.harrysoft.androidbluetoothserial.SimpleBluetoothDeviceInterface
+import io.github.controlwear.virtual.joystick.android.JoystickView
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -60,7 +65,7 @@ class MainActivity : AppCompatActivity() {
     /** Default device is CPU */
     private var device = Device.CPU
 
-    private var mode = Mode.Stop
+    private var mode = CommandMode.Stop
 
     private var cameraIndex = 0
 
@@ -82,6 +87,9 @@ class MainActivity : AppCompatActivity() {
     private var isClassifyPose = false
 
     private lateinit var sharedPref: SharedPreferences
+
+    var serialDevice: BluetoothSerialDevice? = null
+    var deviceInterface: SimpleBluetoothDeviceInterface? = null
 
     private val requestPermissionLauncher =
         registerForActivityResult(
@@ -191,6 +199,109 @@ class MainActivity : AppCompatActivity() {
         if (!isCameraPermissionGranted()) {
             requestPermission()
         }
+
+        // Initiate bluetooth serial
+        val bluetoothManager = BluetoothManager.getInstance()
+
+        if (bluetoothManager == null) {
+            Toast.makeText(applicationContext, "Bluetooth not available.", Toast.LENGTH_LONG).show()
+            print("no bluetooth")
+        }
+
+        val pairedDevices = bluetoothManager.pairedDevicesList
+        val mac = pairedDevices.find { it.name.contains("F6") }?.address
+        if (mac == null) {
+            Toast.makeText(applicationContext, "No such device.", Toast.LENGTH_LONG).show()
+            print("no device")
+        }
+
+        Toast.makeText(applicationContext, "getting device", Toast.LENGTH_LONG).show()
+
+        serialDevice = bluetoothManager.openSerialDevice(mac).blockingGet()
+
+        deviceInterface = serialDevice?.toSimpleDeviceInterface()
+
+
+        toast("got device")
+
+        val joystick = findViewById<JoystickView>(R.id.joystick)
+        joystick.setOnMoveListener { angle, strength ->
+            if (mode != CommandMode.Manual) {
+                return@setOnMoveListener
+            }
+            if (strength <= 30) {
+                deviceInterface?.sendMessage("(5,0,0,0)")
+                return@setOnMoveListener
+            }
+
+
+            deviceInterface?.sendMessage("(5,0,${strength / 2},${angle})")
+        }
+
+        val leftBtn = findViewById<Button>(R.id.left_btn)
+        val rightBtn = findViewById<Button>(R.id.right_btn)
+        val forwardBtn = findViewById<Button>(R.id.forward_btn)
+        val stopBtn = findViewById<Button>(R.id.stop_btn)
+
+        leftBtn.setOnTouchListener { v, e ->
+
+            if (mode == CommandMode.Manual){
+                deviceInterface?.sendMessage("(5,2,0,0)")
+                return@setOnTouchListener
+            }
+
+            sendLineFollowConfig(0)
+
+            false
+        }
+
+        rightBtn.setOnTouchListener { v, e ->
+
+            if (mode == CommandMode.Manual){
+                deviceInterface?.sendMessage("(5,1,0,0)")
+                return@setOnTouchListener
+            }
+
+            sendLineFollowConfig(1)
+
+            false
+        }
+
+        forwardBtn.setOnTouchListener { v, e ->
+            sendLineFollowConfig(2)
+
+            false
+        }
+
+        stopBtn.setOnTouchListener {v,e->
+            if (mode == CommandMode.Stop){
+                deviceInterface?.sendMessage("(0)")
+                return
+            }
+            if (mode == CommandMode.Manual){
+                deviceInterface?.sendMessage("(5,0,0,0)")
+            }
+        }
+
+    }
+
+    fun sendLineFollowConfig(sideNum: Int) {
+        if (mode == CommandMode.Stop || mode == CommandMode.Manual || mode == CommandMode.TGridFollowerCmdSeq) {
+            return
+        }
+        if (mode == CommandMode.YLineFollower) {
+            deviceInterface?.sendMessage("(1,${sideNum})")
+            return
+        }
+        if (mode == CommandMode.TGridFollowerCmdSingleButton || mode == CommandMode.TGridFollowerCmdSinglePose) {
+            deviceInterface?.sendMessage("(3,${sideNum})")
+            return
+        }
+    }
+
+    fun toast(string: String) {
+//        Toast.makeText(applicationContext, string, Toast.LENGTH_LONG).show()
+        findViewById<TextView>(R.id.logger).text = string
     }
 
     override fun onStart() {
@@ -359,13 +470,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun changeMode(position: Int) {
         mode = when (position) {
-            0 -> Mode.Stop
-            1 -> Mode.YLineFollower
-            2 -> Mode.TGridFollowerCmdSeq
-            3 -> Mode.TGridFollowerCmdSingleButton
-            4 -> Mode.TGridFollowerCmdSinglePose
-            5 -> Mode.Manual
-            else -> Mode.Stop
+            0 -> CommandMode.Stop
+            1 -> CommandMode.YLineFollower
+            2 -> CommandMode.TGridFollowerCmdSeq
+            3 -> CommandMode.TGridFollowerCmdSingleButton
+            4 -> CommandMode.TGridFollowerCmdSinglePose
+            5 -> CommandMode.Manual
+            else -> CommandMode.Stop
         }
     }
 

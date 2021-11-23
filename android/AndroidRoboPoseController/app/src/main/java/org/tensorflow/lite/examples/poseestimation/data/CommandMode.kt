@@ -1,6 +1,6 @@
 package org.tensorflow.lite.examples.poseestimation.data
 
-enum class Mode {
+enum class CommandMode {
     Stop,
     YLineFollower,
     TGridFollowerCmdSeq,

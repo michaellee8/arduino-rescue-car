@@ -171,6 +171,11 @@ class MainActivity : AppCompatActivity() {
             isPoseClassifier()
         }
 
+    fun sendSerialMessage(str: String){
+        toast(str)
+        sendSerialMessage(str)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -230,12 +235,12 @@ class MainActivity : AppCompatActivity() {
                 return@setOnMoveListener
             }
             if (strength <= 30) {
-                deviceInterface?.sendMessage("(5,0,0,0)")
+                sendSerialMessage("(5,0,0,0)")
                 return@setOnMoveListener
             }
 
 
-            deviceInterface?.sendMessage("(5,0,${strength / 2},${angle})")
+            sendSerialMessage("(5,0,${strength / 2},${angle})")
         }
 
         val leftBtn = findViewById<Button>(R.id.left_btn)
@@ -245,9 +250,15 @@ class MainActivity : AppCompatActivity() {
 
         leftBtn.setOnTouchListener { v, e ->
 
-            if (mode == CommandMode.Manual){
-                deviceInterface?.sendMessage("(5,2,0,0)")
-                return@setOnTouchListener
+            if (mode == CommandMode.Manual) {
+                if (e.action == MotionEvent.ACTION_DOWN) {
+                    sendSerialMessage("(5,2,0,0)")
+                    false
+                }
+                if (e.action == MotionEvent.ACTION_UP) {
+                    sendSerialMessage("(0)")
+                    false
+                }
             }
 
             sendLineFollowConfig(0)
@@ -257,9 +268,15 @@ class MainActivity : AppCompatActivity() {
 
         rightBtn.setOnTouchListener { v, e ->
 
-            if (mode == CommandMode.Manual){
-                deviceInterface?.sendMessage("(5,1,0,0)")
-                return@setOnTouchListener
+            if (mode == CommandMode.Manual) {
+                if (e.action == MotionEvent.ACTION_DOWN) {
+                    sendSerialMessage("(5,1,0,0)")
+                    false
+                }
+                if (e.action == MotionEvent.ACTION_UP) {
+                    sendSerialMessage("(0)")
+                    false
+                }
             }
 
             sendLineFollowConfig(1)
@@ -273,14 +290,16 @@ class MainActivity : AppCompatActivity() {
             false
         }
 
-        stopBtn.setOnTouchListener {v,e->
-            if (mode == CommandMode.Stop){
-                deviceInterface?.sendMessage("(0)")
-                return
-            }
-            if (mode == CommandMode.Manual){
-                deviceInterface?.sendMessage("(5,0,0,0)")
-            }
+        stopBtn.setOnTouchListener { v, e ->
+//            if (mode == CommandMode.Stop){
+//                sendSerialMessage("(0)")
+//                return
+//            }
+//            if (mode == CommandMode.Manual){
+//                sendSerialMessage("(5,0,0,0)")
+//            }
+            sendSerialMessage("(0)")
+            false
         }
 
     }
@@ -290,11 +309,11 @@ class MainActivity : AppCompatActivity() {
             return
         }
         if (mode == CommandMode.YLineFollower) {
-            deviceInterface?.sendMessage("(1,${sideNum})")
+            sendSerialMessage("(1,${sideNum})")
             return
         }
         if (mode == CommandMode.TGridFollowerCmdSingleButton || mode == CommandMode.TGridFollowerCmdSinglePose) {
-            deviceInterface?.sendMessage("(3,${sideNum})")
+            sendSerialMessage("(3,${sideNum})")
             return
         }
     }

@@ -10,6 +10,8 @@
 #define OLED_RESET 28  // 4 // Reset pin # (or -1 if sharing Arduino reset pin)
 Adafruit_SSD1306 display(kScreenWidth, kScreenHeight, &Wire, OLED_RESET);
 
+CarBluetoothController car_bluetooth_controller(Serial3);
+
 // Arduino has no double, double is float
 // float is slow anyway since it is emulated, Arduino has no FPU
 
@@ -277,7 +279,31 @@ void ExitTIntersectionCleanUp() {
 }
 
 void RunLogic() {
-  const Direction intended_direction = Direction::kLeft;
+
+  if (car_bluetooth_controller.GetMode() == CommandMode::kStop){
+    motors.Stop();
+    debug_number = 401;
+    return;
+  }
+
+  if (car_bluetooth_controller.GetMode() == CommandMode::kManual){
+    if (car_bluetooth_controller.GetDirection() == Direction::kLeft){
+      debug_number = 402;
+      motors.Rotate(-kRotationSpeed);
+      return;
+    }
+    if (car_bluetooth_controller.GetDirection() == Direction::kRight){
+      debug_number = 403;
+      motors.Rotate(kRotationSpeed);
+      return;
+    }
+    debug_number = 404;
+    motors.TranslatePolar(car_bluetooth_controller.GetSpeed(), car_bluetooth_controller.GetPolarAngle());
+    return;
+  }
+
+
+  Direction intended_direction = car_bluetooth_controller.GetDirection();
 
   if (y_turning_force_forward_state.isInside()) {
     motors.Forward(kForwardSpeed);
@@ -538,6 +564,8 @@ void RunLogic() {
 void setup() {
   Serial.begin(kSerialBaudRate);
 
+  car_bluetooth_controller.Setup();
+
   // OLED Setup//////////////////////////////////
   if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {  // Address 0x3C for 128x32
     Serial.println(F("SSD1306 allocation failed"));
@@ -573,6 +601,7 @@ void setup() {
 }
 
 void loop() {
+  car_bluetooth_controller.Loop();
   // MeasureDistance();
   MeasureLineSensor();
   RunLogic();

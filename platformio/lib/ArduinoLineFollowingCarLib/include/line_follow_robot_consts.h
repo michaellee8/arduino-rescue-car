@@ -86,4 +86,13 @@ enum class Direction { kLeft, kForward, kRight };
 
 enum class Side { kLeft, kMiddle, kRight };
 
+enum class CommandMode {
+    kStop,
+    kYLineFollower,
+    kTGridFollowerCmdSeq,
+    kTGridFollowerCmdSingleButton,
+    kTGridFollowerCmdSinglePose,
+    kManual
+};
+
 #endif

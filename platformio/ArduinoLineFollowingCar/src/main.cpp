@@ -4,7 +4,6 @@
 #include <SPI.h>
 #include <TimedState.h>
 #include <Wire.h>
-
 #include <line_following_car_lib.h>
 
 // Declaration for an SSD1306 display connected to I2C (SDA, SCL pins)
@@ -19,7 +18,7 @@ Adafruit_SSD1306 display(kScreenWidth, kScreenHeight, &Wire, OLED_RESET);
 float distance_in_cm_L;
 float distance_in_cm_R;
 
-TimedState force_forward_state(500);
+TimedState y_turning_force_forward_state(500);
 
 TimedState t_intersection_force_forward_state(1000);
 
@@ -27,11 +26,19 @@ TimedState y_intersection_left_turning_state(3000);
 
 TimedState y_intersection_right_turning_state(3000);
 
+TimedState last_seen_left_state(200);
+
+TimedState last_seen_middle_state(200);
+
+TimedState last_seen_right_state(200);
+
 TimedState nothing_seen_continue_orignial_direciton_state(1000);
 
 TimedState nothing_seen_back_state(2000);
 
 TimedState t_intersection_turning_state(3000);
+
+RepeatingTimedState logging_mask_state(1, 99, false);
 
 SimpleState got_l, got_m, got_r;
 
@@ -187,88 +194,23 @@ void LogToSerial() {
   Serial.println();
 }
 
-void RunLogic() {
-  const Direction intended_direction = Direction::kRight;
+void LogDebugNumberSeldomly() {
+  if (logging_mask_state.isInside()) {
+    Serial.println(debug_number);
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.print(debug_number);
+    display.display();
+  }
+}
 
-  if (force_forward_state.isInside() ||
-      t_intersection_force_forward_state.isInside()) {
+void RunLogic() {
+  const Direction intended_direction = Direction::kLeft;
+
+  if (y_turning_force_forward_state.isInside()) {
     motors.Forward(kForwardSpeed);
     debug_number = 11;
     return;
-  }
-
-  if (t_intersection_turning_state.isInside()) {
-    if (is_l_black || is_r_black) {
-      // We are not clear from the intersfection yet.
-      debug_number = 25;
-      motors.Forward(kForwardSpeed);
-      return;
-    }
-    if (is_m_black) {
-      debug_number = 26;
-      t_intersection_cleared.enter();
-      t_intersection_force_forward_state.enter();
-      return;
-    }
-    if (!t_intersection_cleared.isInside()) {
-      // Impossible case!
-      debug_number = 27;
-      motors.Stop();
-      return;
-    }
-    // We are cleared! Let's do the rotation.
-    if (intended_direction == Direction::kForward) {
-      debug_number = 28;
-      // To move forward, just exit the state;
-      t_intersection_turning_state.exit();
-      t_intersection_cleared.exit();
-      t_got_l.exit();
-      t_got_m.exit();
-      t_got_r.exit();
-      return;
-    }
-
-    if (intended_direction == Direction::kLeft) {
-      if (is_l_black) {
-        t_got_l.enter();
-      }
-      if (t_got_l.isInside() && is_m_black) {
-        t_got_m.enter();
-      }
-      if (t_got_l.isInside() && t_got_m.isInside()) {
-        t_intersection_turning_state.exit();
-        t_got_l.exit();
-        t_got_m.exit();
-        t_intersection_cleared.exit();
-        debug_number = 29;
-        return;
-      } else {
-        motors.Rotate(-kRotationSpeed);
-        debug_number = 30;
-        return;
-      }
-    }
-
-    if (intended_direction == Direction::kRight) {
-      if (is_r_black) {
-        t_got_r.enter();
-      }
-      if (t_got_r.isInside() && is_m_black) {
-        t_got_m.enter();
-      }
-      if (t_got_r.isInside() && t_got_m.isInside()) {
-        t_intersection_turning_state.exit();
-        t_got_r.exit();
-        t_got_m.exit();
-        t_intersection_cleared.exit();
-        debug_number = 31;
-        return;
-      } else {
-        motors.Rotate(kRotationSpeed);
-        debug_number = 32;
-        return;
-      }
-    }
   }
 
   if (y_intersection_left_turning_state.isInside()) {
@@ -300,7 +242,7 @@ void RunLogic() {
         y_intersection_left_turning_state.exit();
         got_m.exit();
         got_r.exit();
-        force_forward_state.enter();
+        y_turning_force_forward_state.enter();
         debug_number = 15;
         return;
       } else {
@@ -340,7 +282,7 @@ void RunLogic() {
         y_intersection_left_turning_state.exit();
         got_m.exit();
         got_l.exit();
-        force_forward_state.enter();
+        y_turning_force_forward_state.enter();
         debug_number = 29;
         return;
       } else {
@@ -351,19 +293,23 @@ void RunLogic() {
     }
   }
 
-  if (is_l_black && is_m_black && is_r_black) {
+  if ((is_l_black && is_m_black && is_r_black) ||
+      (last_seen_left_state.isInside() && last_seen_middle_state.isInside() &&
+       last_seen_right_state.isInside())) {
     t_intersection_turning_state.enter();
     debug_number = 24;
     return;
   }
 
-  if (is_m_black && is_l_black && !t_intersection_turning_state.isInside()) {
+  if ((is_m_black && is_l_black) ||
+      (last_seen_left_state.isInside() && last_seen_middle_state.isInside())) {
     y_intersection_left_turning_state.enter();
     debug_number = 17;
     return;
   }
 
-  if (is_m_black && is_r_black && !t_intersection_turning_state.isInside()) {
+  if ((is_m_black && is_r_black) ||
+      (last_seen_middle_state.isInside() && last_seen_right_state.isInside())) {
     y_intersection_right_turning_state.enter();
     debug_number = 31;
     return;
@@ -371,6 +317,7 @@ void RunLogic() {
 
   if (is_l_black) {
     last_seen_side = Side::kLeft;
+    last_seen_left_state.forceEnter();
     motors.Rotate(-kRotationSpeed);
     debug_number = 18;
     return;
@@ -378,6 +325,7 @@ void RunLogic() {
 
   if (is_r_black) {
     last_seen_side = Side::kRight;
+    last_seen_right_state.forceEnter();
     motors.Rotate(kRotationSpeed);
     debug_number = 19;
     return;
@@ -385,6 +333,7 @@ void RunLogic() {
 
   if (is_m_black) {
     last_seen_side = Side::kMiddle;
+    last_seen_middle_state.forceEnter();
     motors.Forward(kForwardSpeed);
     debug_number = 20;
     return;
@@ -435,9 +384,14 @@ void setup() {
 
   // Wait for 5 seconds before starting
   display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+  display.cp437(true);
   display.setCursor(0, 0);
   display.print("Init... 5 secs");
   display.display();
+
+  logging_mask_state.enter();
   delay(5000);
 }
 
@@ -445,6 +399,7 @@ void loop() {
   // MeasureDistance();
   MeasureLineSensor();
   RunLogic();
+  LogDebugNumberSeldomly();
   // LogToDisplay();
   // LogToSerial();
 }

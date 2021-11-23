@@ -1,0 +1,20 @@
+{
+  "name": "ArduinoLineFollowingCarLib",
+  "version": "0.0.1",
+  "description": "Common code for this project",
+  "repository":
+  {
+    "type": "git",
+    "url": "https://github.com/michaellee8/arduino-rescue-car"
+  },
+  "authors":
+  [
+    {
+      "name": "Michael Lee",
+      "email": "ckmichael8@gmail.com"
+    }
+  ],
+  "license": "MIT",
+  "frameworks": "*",
+  "platforms": "*"
+}

@@ -48,16 +48,20 @@
 // Left front line sensor
 #define LINE_SENSOR_LF_ANALOG_PIN A0
 
+// Middle middle line sensor
+#define LINE_SENSOR_MM_ANALOG_PIN A13
+
+// Right middle line sensor
+#define LINE_SENSOR_RM_ANALOG_PIN A15
+
+// Left middle line sensor
+#define LINE_SENSOR_LM_ANALOG_PIN A14
+
 // Temperature sensor
 #define TEMPERATURE_SENSOR_PIN A8
 
 // Buzzer
 #define BUZZER_PIN A12
-
-// RGB light module
-#define RGB_LIGHT_MODULE_RED_PIN A13
-#define RGB_LIGHT_MODULE_GREEN_PIN A14
-#define RGB_LIGHT_MODULE_BLUE_PIN A15
 
 #define SERIAL_USE_CLEAR_MAGIC true
 #define SERIAL_CLEAR_MAGIC_STRING "\033[2J\033[1;1H"

@@ -35,6 +35,9 @@ import android.view.SurfaceView
 import kotlinx.coroutines.suspendCancellableCoroutine
 import org.tensorflow.lite.examples.poseestimation.VisualizationUtils
 import org.tensorflow.lite.examples.poseestimation.YuvToRgbConverter
+import org.tensorflow.lite.examples.poseestimation.data.BodyPart
+import org.tensorflow.lite.examples.poseestimation.data.CarDirection
+import org.tensorflow.lite.examples.poseestimation.data.KeyPoint
 import org.tensorflow.lite.examples.poseestimation.data.Person
 import org.tensorflow.lite.examples.poseestimation.ml.MoveNetMultiPose
 import org.tensorflow.lite.examples.poseestimation.ml.PoseClassifier
@@ -43,6 +46,7 @@ import org.tensorflow.lite.examples.poseestimation.ml.TrackerType
 import java.util.*
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
+import kotlin.math.*
 
 class CameraSource(
     private val surfaceView: SurfaceView,
@@ -65,6 +69,12 @@ class CameraSource(
     private var isTrackerEnabled = false
     private var yuvConverter: YuvToRgbConverter = YuvToRgbConverter(surfaceView.context)
     private lateinit var imageBitmap: Bitmap
+
+    public var onCarDirectionHandler: (CarDirection) -> Unit = {}
+
+    public var persons: MutableList<Person> = mutableListOf()
+
+    public var carDirection: CarDirection = CarDirection.STOP
 
     /** Frame count that have been processed so far in an one second interval to calculate FPS. */
     private var fpsTimer: Timer? = null
@@ -271,6 +281,50 @@ class CameraSource(
             listener?.onDetectedInfo(persons[0].score, classificationResult)
         }
         visualize(persons, bitmap)
+
+        // Detect car direction
+
+        if (persons.size > 0){
+            val person = persons[0]
+            val leftElbow = person.keyPoints.find { it.bodyPart == BodyPart.LEFT_ELBOW }
+            val leftHip = person.keyPoints.find { it.bodyPart == BodyPart.LEFT_HIP }
+            val leftShoulder = person.keyPoints.find { it.bodyPart == BodyPart.LEFT_SHOULDER }
+
+
+            val rightElbow = person.keyPoints.find { it.bodyPart == BodyPart.RIGHT_ELBOW }
+            val rightHip = person.keyPoints.find { it.bodyPart == BodyPart.RIGHT_HIP }
+            val rightShoulder = person.keyPoints.find { it.bodyPart == BodyPart.RIGHT_SHOULDER }
+
+            if (leftElbow != null && leftHip != null && leftShoulder != null && rightElbow != null && rightHip != null && rightShoulder != null) {
+                val leftAngle = getAngle(leftElbow, leftShoulder, leftHip)
+                val rightAngle = getAngle(rightElbow, rightShoulder, rightHip)
+
+                val prevCarDirection = carDirection
+
+                carDirection = if (leftAngle in 60.0..120.0 && rightAngle in 60.0..120.0){
+                    CarDirection.STOP
+                }else if (leftAngle in 60.0..120.0){
+                    CarDirection.LEFT
+                }else if (rightAngle in 60.0..120.0){
+                    CarDirection.RIGHT
+                }else if (leftAngle in 150.0..180.0 && rightAngle in 150.0..180.0){
+                    CarDirection.FORWARD
+                }else if (leftAngle in 0.0..30.0 && rightAngle in 0.0..30.0){
+                    CarDirection.BACKWARD
+                }else {
+                    CarDirection.STOP
+                }
+
+                if (prevCarDirection != carDirection){
+                    onCarDirectionHandler(carDirection)
+                }
+
+
+            }
+
+        }
+
+        this.persons = persons
     }
 
     private fun visualize(persons: List<Person>, bitmap: Bitmap) {
@@ -328,4 +382,18 @@ class CameraSource(
 
         fun onDetectedInfo(personScore: Float?, poseLabels: List<Pair<String, Float>>?)
     }
+}
+
+fun getAngle(firstPoint: KeyPoint, midPoint: KeyPoint, lastPoint: KeyPoint): Double {
+    var result = Math.toDegrees(
+        (atan2(lastPoint.coordinate.y - midPoint.coordinate.y,
+            lastPoint.coordinate.x - midPoint.coordinate.x)
+                - atan2(firstPoint.coordinate.y - midPoint.coordinate.y,
+            firstPoint.coordinate.x - midPoint.coordinate.x)).toDouble()
+    )
+    result = Math.abs(result) // Angle should never be negative
+    if (result > 180) {
+        result = 360.0 - result // Always get the acute representation of the angle
+    }
+    return result
 }

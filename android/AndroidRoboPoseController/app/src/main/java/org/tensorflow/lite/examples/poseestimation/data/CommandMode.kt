@@ -5,6 +5,6 @@ enum class CommandMode {
     YLineFollower,
     TGridFollowerCmdSeq,
     TGridFollowerCmdSingleButton,
-    TGridFollowerCmdSinglePose,
+    ManualPose,
     Manual
 }

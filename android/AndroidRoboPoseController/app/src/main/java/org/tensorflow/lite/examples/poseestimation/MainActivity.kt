@@ -45,6 +45,8 @@ import com.harrysoft.androidbluetoothserial.BluetoothManager
 import com.harrysoft.androidbluetoothserial.BluetoothSerialDevice
 import com.harrysoft.androidbluetoothserial.SimpleBluetoothDeviceInterface
 import io.github.controlwear.virtual.joystick.android.JoystickView
+import org.tensorflow.lite.examples.poseestimation.data.CarDirection
+
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -171,9 +173,22 @@ class MainActivity : AppCompatActivity() {
             isPoseClassifier()
         }
 
-    fun sendSerialMessage(str: String){
+    fun sendSerialMessage(str: String) {
         toast(str)
-        sendSerialMessage(str)
+        deviceInterface?.sendMessage(str)
+    }
+
+    fun handleCarDirection(dir: CarDirection) {
+        findViewById<TextView>(R.id.direction_logger).text = dir.name
+        if (mode == CommandMode.ManualPose){
+            when (dir){
+                 CarDirection.RIGHT -> sendSerialMessage("(5,0,40,0)")
+                CarDirection.LEFT -> sendSerialMessage("(5,0,40,180)")
+                CarDirection.FORWARD -> sendSerialMessage("(5,0,40,90)")
+                CarDirection.BACKWARD -> sendSerialMessage("(5,0,40,270)")
+                CarDirection.STOP -> sendSerialMessage("(5,0,0,0)")
+            }
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -204,6 +219,8 @@ class MainActivity : AppCompatActivity() {
         if (!isCameraPermissionGranted()) {
             requestPermission()
         }
+
+//        findViewById<BottomSheet>(R.id.bottom_sheet).behavior.isDraggable = false
 
         // Initiate bluetooth serial
         val bluetoothManager = BluetoothManager.getInstance()
@@ -279,13 +296,13 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            sendLineFollowConfig(1)
+            sendLineFollowConfig(2)
 
             false
         }
 
         forwardBtn.setOnTouchListener { v, e ->
-            sendLineFollowConfig(2)
+            sendLineFollowConfig(1)
 
             false
         }
@@ -312,7 +329,7 @@ class MainActivity : AppCompatActivity() {
             sendSerialMessage("(1,${sideNum})")
             return
         }
-        if (mode == CommandMode.TGridFollowerCmdSingleButton || mode == CommandMode.TGridFollowerCmdSinglePose) {
+        if (mode == CommandMode.TGridFollowerCmdSingleButton || mode == CommandMode.ManualPose) {
             sendSerialMessage("(3,${sideNum})")
             return
         }
@@ -382,6 +399,7 @@ class MainActivity : AppCompatActivity() {
                     }, cameraIndex).apply {
                         prepareCamera()
                     }
+                cameraSource?.onCarDirectionHandler = { handleCarDirection(it) }
                 isPoseClassifier()
                 lifecycleScope.launch(Dispatchers.Main) {
                     cameraSource?.initCamera()
@@ -442,7 +460,7 @@ class MainActivity : AppCompatActivity() {
             adaper.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
 
             spnMode.adapter = adaper
-            spnCamera.onItemSelectedListener = changeModeListener
+            spnMode.onItemSelectedListener = changeModeListener
         }
 
         ArrayAdapter.createFromResource(
@@ -493,7 +511,7 @@ class MainActivity : AppCompatActivity() {
             1 -> CommandMode.YLineFollower
             2 -> CommandMode.TGridFollowerCmdSeq
             3 -> CommandMode.TGridFollowerCmdSingleButton
-            4 -> CommandMode.TGridFollowerCmdSinglePose
+            4 -> CommandMode.ManualPose
             5 -> CommandMode.Manual
             else -> CommandMode.Stop
         }

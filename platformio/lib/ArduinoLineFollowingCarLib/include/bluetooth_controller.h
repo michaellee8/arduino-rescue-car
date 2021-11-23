@@ -11,7 +11,7 @@ class CarBluetoothController {
     void Setup();
     void Loop();
     CommandMode GetMode();
-    Side GetSide();
+    Direction GetDirection();
     int GetSpeed();
     int GetPolarAngle();
 

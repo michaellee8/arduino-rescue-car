@@ -18,16 +18,19 @@ void CarBluetoothController::Loop() {
     }
     if (inputChar == ')') {
       start_reading_ = false;
-      // whole command sequence read, set values
+      // whole command sequence read, parse seq and set values
       ParseCmdSeq(cmd_queue_);
       cmd_queue_ = "";
       continue;
     }
-    cmd_queue_ += inputChar;
+    if (start_reading_) {
+      cmd_queue_ += inputChar;
+    }
   }
 }
 
 void CarBluetoothController::ParseCmdSeq(const String& seq) {
+  Serial.println("cmd seq: " + seq);
   if (seq.charAt(0) == '0') {
     // Stop mode
     mode_ = CommandMode::kStop;
@@ -88,7 +91,20 @@ void CarBluetoothController::ParseCmdSeq(const String& seq) {
 
     auto first_comma_index = 3;
     auto second_comma_index = seq.indexOf(',', first_comma_index + 1);
+
+    speed_ =
+        cmd_queue_.substring(first_comma_index + 1, second_comma_index).toInt();
+    polar_angle_ = cmd_queue_.substring(second_comma_index + 1).toInt();
+    return;
   }
 
   Serial.println("impossible 3");
 }
+
+CommandMode CarBluetoothController::GetMode() { return mode_; }
+
+Direction CarBluetoothController::GetDirection() { return direction_; }
+
+int CarBluetoothController::GetSpeed() { return speed_; }
+
+int CarBluetoothController::GetPolarAngle() { return polar_angle_; }

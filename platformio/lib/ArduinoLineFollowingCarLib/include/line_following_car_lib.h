@@ -8,5 +8,6 @@
 #include "line_follow_robot_consts.h"
 #include "sensors.h"
 #include "utils.h"
+#include "bluetooth_controller.h"
 
 #endif

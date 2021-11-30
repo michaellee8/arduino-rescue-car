@@ -44,6 +44,24 @@ void CarMotors::Translate(int speed, int angle) {
   rb.SetSpeed(round(rb_speed));
 }
 
+void CarMotors::TranslatePolar(int speed, int angle) {
+  if (speed == 0) {
+    Stop();
+    return;
+  }
+  auto polar_radian = angle * DEG_TO_RAD;
+  auto forward_component = speed * sin(polar_radian);
+  auto right_component = speed * cos(polar_radian);
+  auto lf_speed = forward_component + right_component;
+  auto lb_speed = forward_component - right_component;
+  auto rf_speed = forward_component - right_component;
+  auto rb_speed = forward_component + right_component;
+  lf.SetSpeed(round(lf_speed));
+  lb.SetSpeed(round(lb_speed));
+  rf.SetSpeed(round(rf_speed));
+  rb.SetSpeed(round(rb_speed));
+}
+
 void CarMotors::SetByLetter(int a, int b, int c, int d) {
   motors_[0].SetSpeed(a);
   motors_[1].SetSpeed(b);
@@ -66,7 +84,7 @@ void CarMotors::Stop() {
   rb.SetSpeed(0);
 }
 
-void CarMotors::GetMotorsSpeed(int (&speeds)[4]){
+void CarMotors::GetMotorsSpeed(int (&speeds)[4]) {
   speeds[0] = motors_[0].GetCurrentSpeed();
   speeds[1] = motors_[1].GetCurrentSpeed();
   speeds[2] = motors_[2].GetCurrentSpeed();

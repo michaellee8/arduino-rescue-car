@@ -30,6 +30,9 @@ class CarMotors {
   // degree
   void Translate(int speed, int angle);
 
+  // Uses polar coordinate system instead
+  void TranslatePolar(int speed, int angle);
+
   void SetByLetter(int a, int b, int c, int d);
 
   void SetByPos(int speed_lf, int speed_lb, int speed_rf, int speed_rb);

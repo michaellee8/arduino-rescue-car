@@ -24,6 +24,7 @@ import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Process
+import android.view.MotionEvent
 import android.view.SurfaceView
 import android.view.View
 import android.view.WindowManager
@@ -38,8 +39,14 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.tensorflow.lite.examples.poseestimation.camera.CameraSource
 import org.tensorflow.lite.examples.poseestimation.data.Device
-import org.tensorflow.lite.examples.poseestimation.data.Mode
+import org.tensorflow.lite.examples.poseestimation.data.CommandMode
 import org.tensorflow.lite.examples.poseestimation.ml.*
+import com.harrysoft.androidbluetoothserial.BluetoothManager
+import com.harrysoft.androidbluetoothserial.BluetoothSerialDevice
+import com.harrysoft.androidbluetoothserial.SimpleBluetoothDeviceInterface
+import io.github.controlwear.virtual.joystick.android.JoystickView
+import org.tensorflow.lite.examples.poseestimation.data.CarDirection
+
 
 class MainActivity : AppCompatActivity() {
     companion object {
@@ -60,7 +67,7 @@ class MainActivity : AppCompatActivity() {
     /** Default device is CPU */
     private var device = Device.CPU
 
-    private var mode = Mode.Stop
+    private var mode = CommandMode.Stop
 
     private var cameraIndex = 0
 
@@ -82,6 +89,9 @@ class MainActivity : AppCompatActivity() {
     private var isClassifyPose = false
 
     private lateinit var sharedPref: SharedPreferences
+
+    var serialDevice: BluetoothSerialDevice? = null
+    var deviceInterface: SimpleBluetoothDeviceInterface? = null
 
     private val requestPermissionLauncher =
         registerForActivityResult(
@@ -163,6 +173,24 @@ class MainActivity : AppCompatActivity() {
             isPoseClassifier()
         }
 
+    fun sendSerialMessage(str: String) {
+        toast(str)
+        deviceInterface?.sendMessage(str)
+    }
+
+    fun handleCarDirection(dir: CarDirection) {
+        findViewById<TextView>(R.id.direction_logger).text = dir.name
+        if (mode == CommandMode.ManualPose){
+            when (dir){
+                 CarDirection.RIGHT -> sendSerialMessage("(5,0,40,0)")
+                CarDirection.LEFT -> sendSerialMessage("(5,0,40,180)")
+                CarDirection.FORWARD -> sendSerialMessage("(5,0,40,90)")
+                CarDirection.BACKWARD -> sendSerialMessage("(5,0,40,270)")
+                CarDirection.STOP -> sendSerialMessage("(5,0,0,0)")
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -191,6 +219,125 @@ class MainActivity : AppCompatActivity() {
         if (!isCameraPermissionGranted()) {
             requestPermission()
         }
+
+//        findViewById<BottomSheet>(R.id.bottom_sheet).behavior.isDraggable = false
+
+        // Initiate bluetooth serial
+        val bluetoothManager = BluetoothManager.getInstance()
+
+        if (bluetoothManager == null) {
+            Toast.makeText(applicationContext, "Bluetooth not available.", Toast.LENGTH_LONG).show()
+            print("no bluetooth")
+        }
+
+        val pairedDevices = bluetoothManager.pairedDevicesList
+        val mac = pairedDevices.find { it.name.contains("F6") }?.address
+        if (mac == null) {
+            Toast.makeText(applicationContext, "No such device.", Toast.LENGTH_LONG).show()
+            print("no device")
+        }
+
+        Toast.makeText(applicationContext, "getting device", Toast.LENGTH_LONG).show()
+
+        serialDevice = bluetoothManager.openSerialDevice(mac).blockingGet()
+
+        deviceInterface = serialDevice?.toSimpleDeviceInterface()
+
+
+        toast("got device")
+
+        val joystick = findViewById<JoystickView>(R.id.joystick)
+        joystick.setOnMoveListener { angle, strength ->
+            if (mode != CommandMode.Manual) {
+                return@setOnMoveListener
+            }
+            if (strength <= 30) {
+                sendSerialMessage("(5,0,0,0)")
+                return@setOnMoveListener
+            }
+
+
+            sendSerialMessage("(5,0,${strength / 2},${angle})")
+        }
+
+        val leftBtn = findViewById<Button>(R.id.left_btn)
+        val rightBtn = findViewById<Button>(R.id.right_btn)
+        val forwardBtn = findViewById<Button>(R.id.forward_btn)
+        val stopBtn = findViewById<Button>(R.id.stop_btn)
+
+        leftBtn.setOnTouchListener { v, e ->
+
+            if (mode == CommandMode.Manual) {
+                if (e.action == MotionEvent.ACTION_DOWN) {
+                    sendSerialMessage("(5,2,0,0)")
+                    false
+                }
+                if (e.action == MotionEvent.ACTION_UP) {
+                    sendSerialMessage("(0)")
+                    false
+                }
+            }
+
+            sendLineFollowConfig(0)
+
+            false
+        }
+
+        rightBtn.setOnTouchListener { v, e ->
+
+            if (mode == CommandMode.Manual) {
+                if (e.action == MotionEvent.ACTION_DOWN) {
+                    sendSerialMessage("(5,1,0,0)")
+                    false
+                }
+                if (e.action == MotionEvent.ACTION_UP) {
+                    sendSerialMessage("(0)")
+                    false
+                }
+            }
+
+            sendLineFollowConfig(2)
+
+            false
+        }
+
+        forwardBtn.setOnTouchListener { v, e ->
+            sendLineFollowConfig(1)
+
+            false
+        }
+
+        stopBtn.setOnTouchListener { v, e ->
+//            if (mode == CommandMode.Stop){
+//                sendSerialMessage("(0)")
+//                return
+//            }
+//            if (mode == CommandMode.Manual){
+//                sendSerialMessage("(5,0,0,0)")
+//            }
+            sendSerialMessage("(0)")
+            false
+        }
+
+    }
+
+    fun sendLineFollowConfig(sideNum: Int) {
+        if (mode == CommandMode.Stop || mode == CommandMode.Manual || mode == CommandMode.TGridFollowerCmdSeq) {
+            return
+        }
+        if (mode == CommandMode.YLineFollower) {
+            sendSerialMessage("(1,${sideNum})")
+            return
+        }
+        if (mode == CommandMode.TGridFollowerCmdSingleButton || mode == CommandMode.ManualPose) {
+            sendSerialMessage("(3,${sideNum})")
+            return
+        }
+    }
+
+    fun toast(string: String) {
+//        Toast.makeText(applicationContext, string, Toast.LENGTH_LONG).show()
+        findViewById<TextView>(R.id.logger).text = string
     }
 
     override fun onStart() {
@@ -252,6 +399,7 @@ class MainActivity : AppCompatActivity() {
                     }, cameraIndex).apply {
                         prepareCamera()
                     }
+                cameraSource?.onCarDirectionHandler = { handleCarDirection(it) }
                 isPoseClassifier()
                 lifecycleScope.launch(Dispatchers.Main) {
                     cameraSource?.initCamera()
@@ -312,7 +460,7 @@ class MainActivity : AppCompatActivity() {
             adaper.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
 
             spnMode.adapter = adaper
-            spnCamera.onItemSelectedListener = changeModeListener
+            spnMode.onItemSelectedListener = changeModeListener
         }
 
         ArrayAdapter.createFromResource(
@@ -359,13 +507,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun changeMode(position: Int) {
         mode = when (position) {
-            0 -> Mode.Stop
-            1 -> Mode.YLineFollower
-            2 -> Mode.TGridFollowerCmdSeq
-            3 -> Mode.TGridFollowerCmdSingleButton
-            4 -> Mode.TGridFollowerCmdSinglePose
-            5 -> Mode.Manual
-            else -> Mode.Stop
+            0 -> CommandMode.Stop
+            1 -> CommandMode.YLineFollower
+            2 -> CommandMode.TGridFollowerCmdSeq
+            3 -> CommandMode.TGridFollowerCmdSingleButton
+            4 -> CommandMode.ManualPose
+            5 -> CommandMode.Manual
+            else -> CommandMode.Stop
         }
     }
 
